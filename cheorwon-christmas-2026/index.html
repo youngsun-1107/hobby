@@ -1,4 +1,4 @@
-<title>철원 크리스마스 여행</title>
+<title>중화동 깔롱커플의 철원 크리스마스</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,6 +41,9 @@ section{display:flex;flex-direction:column;gap:18px}
 .hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .hero h1{font-family:var(--f-hero);font-weight:400;line-height:.86;letter-spacing:-.02em;font-size:clamp(4.6rem,22vw,10rem)}
 .hero h1 span{display:block}
+.hero h1 .pre{font-family:var(--f-display);font-size:.3em;line-height:1.2;letter-spacing:0;color:var(--ice);margin-bottom:.2em}
+.members{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.members .m{font-family:var(--f-display);font-size:1.05rem;padding:5px 14px;border-radius:99px;background:var(--night-3)}
 .hero h1 .x{color:var(--crane);font-size:.5em;letter-spacing:0}
 .meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .pill{font-family:var(--f-mono);font-size:.8rem;padding:6px 12px;border-radius:99px;border:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -142,7 +145,11 @@ footer{font-size:.8rem;color:var(--muted)}
 <header class="hero">
   <canvas id="snow" aria-hidden="true"></canvas>
   <span class="label">Cheorwon · Christmas 2026</span>
-  <h1><span>철원</span><span class="x">X-MAS</span></h1>
+  <h1><span class="pre">중화동 깔롱커플의</span><span>철원</span><span class="x">X-MAS</span></h1>
+  <div class="members" aria-label="멤버">
+    <span class="label">Members</span>
+    <span class="m">나윤</span><span class="m">종호</span><span class="m">채연</span><span class="m">영선</span>
+  </div>
   <div class="meta">
     <span class="pill dday" id="dday">D-?</span>
     <span class="pill">12.25 FRI — 12.26 SAT</span>
@@ -196,9 +203,9 @@ footer{font-size:.8rem;color:var(--muted)}
     <span class="label">사다리 타기</span>
   </div>
   <div class="gift">
-    <label for="names" style="color:var(--muted);font-size:.88rem">참가자 이름을 쉼표로 구분해 적어 주세요. (예시 이름)</label>
+    <label for="names" style="color:var(--muted);font-size:.88rem">참가자 이름 (쉼표로 구분)</label>
     <div class="row">
-      <input type="text" id="names" value="영선, 친구1, 친구2, 친구3" autocomplete="off">
+      <input type="text" id="names" value="나윤, 종호, 채연, 영선" autocomplete="off">
       <button type="button" class="btn" id="draw">사다리 만들기</button>
     </div>
     <p id="order-hint" style="color:var(--muted);font-size:.88rem">이름을 적고 사다리 만들기를 눌러 주세요.</p>
