@@ -121,6 +121,19 @@ section{display:flex;flex-direction:column;gap:18px}
 .btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--snow)}
 .race-wrap{border-radius:16px;overflow:hidden;background:var(--night)}
 #race{display:block}
+.ticker{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:14px;background:var(--night);font-size:.92rem;min-height:3.4em}
+.ticker .tk{color:var(--muted)}
+.ticker .tk:last-child{color:var(--snow);font-weight:700}
+.ticker .tk b{color:var(--ember);font-family:var(--f-mono);font-weight:700;margin-right:8px}
+.cheers{display:flex;flex-wrap:wrap;gap:6px}
+.cheer{cursor:pointer;border:0;border-radius:99px;padding:7px 14px;color:#fff;font-family:var(--f-display);font-size:1rem}
+.cheer:disabled{opacity:.4;cursor:default}
+.penalty{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.pen-title{font-family:var(--f-display);font-size:1.35rem;flex:1 1 200px;align-self:center}
+[hidden]{display:none!important}
+#penalties{flex:none}
+#wheel{width:280px;height:280px;max-width:100%;align-self:center}
+.pen-result{font-family:var(--f-display);font-size:1.45rem;text-align:center;color:var(--ember);min-height:1.5em}
 .order{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;counter-reset:o}
 .order li{counter-increment:o;background:var(--night);border-radius:99px;padding:5px 14px 5px 6px;display:flex;gap:8px;align-items:center}
 .order li::before{content:attr(data-n);font-family:var(--f-mono);font-size:.75rem;font-weight:700;background:var(--ember);color:var(--night);width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
@@ -197,11 +210,20 @@ footer{font-size:.8rem;color:var(--muted)}
     </div>
     <p id="order-hint" style="color:var(--muted);font-size:.88rem">이름을 적고 레이스 시작을 눌러 주세요.</p>
     <div class="race-wrap" id="race-wrap" hidden><canvas id="race" role="img" aria-label="선물교환 눈썰매 레이스"></canvas></div>
+    <div class="ticker" id="ticker" hidden aria-live="polite"></div>
+    <div class="cheers" id="cheers" hidden></div>
     <div class="row" id="race-ctl" hidden>
       <span id="race-status" style="color:var(--muted);font-size:.88rem;align-self:center;flex:1 1 200px"></span>
       <button type="button" class="btn ghost" id="replay">다시 보기</button>
     </div>
     <ol class="order" id="order" aria-live="polite"></ol>
+    <div class="penalty" id="penalty" hidden>
+      <div class="row"><span class="pen-title" id="pen-title"></span><button type="button" class="btn" id="spin">룰렛 돌리기</button></div>
+      <canvas id="wheel" width="560" height="560" role="img" aria-label="꼴등 벌칙 룰렛"></canvas>
+      <p class="pen-result" id="pen-result" aria-live="polite"></p>
+      <label for="penalties" style="color:var(--muted);font-size:.88rem">벌칙 목록 (쉼표로 구분 · 예시, 고쳐 쓰세요)</label>
+      <input type="text" id="penalties" value="설거지, 다음 날 운전, 술 한 잔 원샷, 노래 한 곡, 아침 라면 끓이기, 뒷정리" autocomplete="off">
+    </div>
   </div>
 </section>
 
@@ -369,7 +391,7 @@ footer{font-size:.8rem;color:var(--muted)}
   }
 
   /* 선물교환 눈썰매 레이스 (이름 · 레이스 시드는 공유 → 모두 같은 레이스) */
-  var namesEl=$('names'), order=$('order'), gift={names:namesEl.value,race:null}, giftPending=false, giftQueued=false;
+  var namesEl=$('names'), order=$('order'), gift={names:namesEl.value,race:null,penalties:$('penalties').value}, giftPending=false, giftQueued=false;
   var COLORS=['#ff5a5f','#3d8bff','#22b07d','#ff9f1c','#9b5de5','#f15bb5','#00a6a6','#e0b100'];
   var DT=1/60, COUNT=1.8, sim=null, raceSeed=null, playing=null;
   var cv2=$('race'), c2=cv2.getContext&&cv2.getContext('2d');
@@ -385,7 +407,9 @@ footer{font-size:.8rem;color:var(--muted)}
       for(var j=0;j<k;j++)ev.push({t:1+R()*19,type:R()<.5?'boost':'slip',d:.7+R()*.9});
       S.push({base:.043+R()*.005,ev:ev,a:R()*6,b:.4+R()*.9,c:R()*6});
     }
-    var t=0;
+    var t=0, comms=[], prevFx=[], leader=-1, lastMsg=-9;
+    for(var q=0;q<n;q++)prevFx.push(0);
+    function say(arr,i){var tx=arr[Math.floor(t*7)%arr.length].replace('{n}',players[i]);comms.push({t:t,s:tx});lastMsg=t}
     while(ord.length<n&&t<70){
       var fx=[], lead=Math.max.apply(null,pos);
       for(var i2=0;i2<n;i2++){
@@ -395,13 +419,27 @@ footer{font-size:.8rem;color:var(--muted)}
         if(f===1)m*=1.9; else if(f===2)m*=.22;
         m*=1+Math.min(.5,(lead-pos[i2])*2.5);
         pos[i2]+=s.base*m*DT;
-        if(pos[i2]>=1){pos[i2]=1;fin[i2]=t;ord.push(i2);f=0}
+        if(pos[i2]>=1){pos[i2]=1;fin[i2]=t;ord.push(i2);f=0;
+          var rk=ord.length;
+          if(rk===1)say(['{n} 1등으로 골인!','{n} 우승! 선물 먼저 고릅니다'],i2);
+          else if(rk===n)say(['{n} 마지막 도착… 벌칙 룰렛 대기','{n} 꼴등 확정… 벌칙 각'],i2);
+          else comms.push({t:t,s:players[i2]+' '+rk+'등 골인'});
+        }
         fx.push(f);
+      }
+      for(var i3=0;i3<n;i3++){
+        if(fx[i3]&&fx[i3]!==prevFx[i3]&&t-lastMsg>.6)say(fx[i3]===1?['{n} 부스트! 치고 나갑니다','{n} 엄청난 가속!','{n} 눈길을 가릅니다!']:['{n} 꽈당… 아쉽습니다','{n} 미끄러집니다!','{n} 눈덩이에 걸렸어요'],i3);
+      }
+      prevFx=fx;
+      if(!ord.length){
+        var ld=0;for(var i4=1;i4<n;i4++)if(pos[i4]>pos[ld])ld=i4;
+        if(ld!==leader&&t>1.5&&t-lastMsg>1.2)say(['{n} 선두 탈환!','{n} 1위로 올라섭니다!','{n} 앞으로 나옵니다!'],ld);
+        leader=ld;
       }
       frames.push({p:pos.slice(),fx:fx});
       t+=DT;
     }
-    return {players:players,frames:frames,order:ord,fin:fin};
+    return {players:players,frames:frames,order:ord,fin:fin,comms:comms};
   }
 
   function rr(x,y,w,h,r){c2.beginPath();c2.moveTo(x+r,y);c2.arcTo(x+w,y,x+w,y+h,r);c2.arcTo(x+w,y+h,x,y+h,r);c2.arcTo(x,y+h,x,y,r);c2.arcTo(x,y,x+w,y,r);c2.closePath()}
@@ -463,12 +501,43 @@ footer{font-size:.8rem;color:var(--muted)}
         c2.fillStyle=rk===1?'#0c1424':'#f2f5fa';c2.font='bold 13px JetBrains Mono, monospace';c2.textAlign='center';c2.textBaseline='middle';c2.fillText(rk,bx,by+.5);
       }
     }
+    var nowT=performance.now();
+    parts=parts.filter(function(q){return nowT-q.born<1400});
+    parts.forEach(function(q){
+      if(q.i>=n)return;
+      var age=(nowT-q.born)/1000, col=COLORS[q.i%COLORS.length];
+      var x=X0+fr.p[q.i]*(X1-X0-6)+q.dx+Math.sin(age*6+q.dx)*6, y=TOP+q.i*LH+LH/2-18-age*46;
+      c2.globalAlpha=Math.max(0,1-age/1.4);
+      if(q.k){c2.fillStyle='#ff5a5f';c2.beginPath();c2.moveTo(x,y+5);c2.bezierCurveTo(x-9,y-2,x-6,y-10,x,y-5);c2.bezierCurveTo(x+6,y-10,x+9,y-2,x,y+5);c2.fill()}
+      else{c2.strokeStyle=col;c2.lineWidth=2;c2.lineCap='round';for(var a=0;a<3;a++){var an=a*Math.PI/3;c2.beginPath();c2.moveTo(x-Math.cos(an)*6,y-Math.sin(an)*6);c2.lineTo(x+Math.cos(an)*6,y+Math.sin(an)*6);c2.stroke()}}
+      c2.globalAlpha=1;
+    });
     if(count){
       c2.font='64px "Bagel Fat One", Jua, sans-serif';c2.textAlign='center';c2.textBaseline='middle';
       c2.lineWidth=8;c2.strokeStyle='#0c1424';c2.strokeText(count,W/2,TOP+n*LH/2);c2.fillStyle='#ff5a5f';c2.fillText(count,W/2,TOP+n*LH/2);
     }
   }
+  var parts=[], room=null, tickN=-1, wheelRot=0, spinning=false;
+  function addCheer(i){for(var j=0;j<4;j++)parts.push({i:i,born:performance.now()+j*90,dx:Math.random()*28-14,k:Math.random()<.5})}
+  function renderTicker(ft){
+    if(!sim)return;
+    var list=sim.comms.filter(function(c){return c.t<=ft});
+    if(list.length===tickN)return; tickN=list.length;
+    $('ticker').innerHTML=list.length?list.slice(-3).map(function(c){return '<div class="tk"><b>'+c.t.toFixed(1)+'s</b>'+esc(c.s)+'</div>'}).join(''):'<div class="tk">출발 준비…</div>';
+  }
+  function renderCheers(on){
+    if(!sim)return;
+    $('cheers').hidden=false;
+    $('cheers').innerHTML=sim.players.map(function(p,i){return '<button type="button" class="cheer" data-i="'+i+'" style="background:'+COLORS[i%COLORS.length]+'"'+(on?'':' disabled')+'>'+esc(p)+' 응원</button>'}).join('');
+  }
+  $('cheers').addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.cheer');if(!b||b.disabled)return;
+    var i=+b.dataset.i;addCheer(i);
+    if(room)room.emit('cheer',{i:i}).catch(function(){});
+  });
   function showResult(done){
+    $('penalty').hidden=!done;
+    if(done){renderPenaltyTitle();drawWheel()}
     order.innerHTML=done&&sim?sim.order.map(function(i,r){return '<li data-n="'+(r+1)+'">'+esc(sim.players[i])+'</li>'}).join(''):'';
     $('race-status').textContent=done?'들어온 순서대로 선물을 골라요.':'레이스 중…';
   }
@@ -476,30 +545,77 @@ footer{font-size:.8rem;color:var(--muted)}
     if(!sim)return;
     if(playing)cancelAnimationFrame(playing);
     $('race-wrap').hidden=false;$('race-ctl').hidden=false;$('order-hint').hidden=true;
-    if(reduce){drawRace(sim.frames.length-1);showResult(true);return}
-    showResult(false);
+    if(reduce){drawRace(sim.frames.length-1);tickN=-1;$('ticker').hidden=false;renderTicker(1e9);renderCheers(false);showResult(true);return}
+    showResult(false);tickN=-1;$('ticker').hidden=false;renderTicker(-1);renderCheers(true);$('pen-result').textContent='';
     var start=performance.now();
     function step(now){
       var e=(now-start)/1000;
       if(e<COUNT){drawRace(0,String(3-Math.floor(e/(COUNT/3))));playing=requestAnimationFrame(step);return}
       var fi=Math.floor((e-COUNT)/DT);
-      drawRace(fi,e-COUNT<.5?'GO!':'');
-      if(fi<sim.frames.length+30)playing=requestAnimationFrame(step);else{playing=null;showResult(true)}
+      drawRace(fi,e-COUNT<.5?'GO!':'');renderTicker(fi*DT);
+      if(fi<sim.frames.length+30)playing=requestAnimationFrame(step);else{playing=null;renderCheers(false);showResult(true)}
     }
     playing=requestAnimationFrame(step);
   }
   function showFinal(){
     if(!sim)return;
     $('race-wrap').hidden=false;$('race-ctl').hidden=false;$('order-hint').hidden=true;
-    drawRace(sim.frames.length-1);showResult(true);
+    drawRace(sim.frames.length-1);tickN=-1;$('ticker').hidden=false;renderTicker(1e9);renderCheers(false);showResult(true);
   }
+
+  /* 꼴등 벌칙 룰렛 (결과는 레이스 시드로 정해져 모두 같음) */
+  var penEl=$('penalties'), wc=$('wheel').getContext&&$('wheel').getContext('2d');
+  var WCOL=['#ff5a5f','#3d8bff','#22b07d','#ff9f1c','#9b5de5','#f15bb5','#00a6a6','#e0b100'];
+  function penList(){return penEl.value.split(/[,，\n]/).map(function(x){return x.trim()}).filter(Boolean).slice(0,12)}
+  function lastName(){return sim?sim.players[sim.order[sim.order.length-1]]:''}
+  function renderPenaltyTitle(){$('pen-title').textContent='꼴등 '+lastName()+'의 벌칙'}
+  function drawWheel(){
+    if(!wc)return;
+    var L=penList(), S=560, R=S/2-14, cx=S/2, cy=S/2+6;
+    wc.clearRect(0,0,S,S);
+    if(L.length<2){wc.fillStyle='#8e9fbb';wc.font='28px Jua, sans-serif';wc.textAlign='center';wc.fillText('벌칙을 두 개 이상 적어 주세요',cx,cy);return}
+    var seg=Math.PI*2/L.length;
+    for(var i=0;i<L.length;i++){
+      var a0=-Math.PI/2+wheelRot+i*seg;
+      wc.beginPath();wc.moveTo(cx,cy);wc.arc(cx,cy,R,a0,a0+seg);wc.closePath();wc.fillStyle=WCOL[i%WCOL.length];wc.fill();
+      wc.strokeStyle='#0c1424';wc.lineWidth=3;wc.stroke();
+      var mid=a0+seg/2, flip=Math.cos(mid)<0;
+      wc.save();wc.translate(cx,cy);wc.rotate(flip?mid+Math.PI:mid);wc.fillStyle='#ffffff';wc.font='26px Jua, sans-serif';wc.textAlign=flip?'left':'right';wc.textBaseline='middle';
+      var tx=L[i].length>8?L[i].slice(0,8)+'…':L[i];wc.fillText(tx,flip?-(R-18):R-18,0);wc.restore();
+    }
+    wc.beginPath();wc.arc(cx,cy,30,0,Math.PI*2);wc.fillStyle='#0c1424';wc.fill();
+    wc.beginPath();wc.moveTo(cx-18,4);wc.lineTo(cx+18,4);wc.lineTo(cx,40);wc.closePath();wc.fillStyle='#ffc247';wc.fill();wc.strokeStyle='#0c1424';wc.lineWidth=3;wc.stroke();
+  }
+  function spinWheel(){
+    var L=penList();
+    if(!sim||spinning||L.length<2)return;
+    var seg=Math.PI*2/L.length, idx=Math.floor(rng((raceSeed^0x5bd1e995)|0)()*L.length);
+    var from=wheelRot%(Math.PI*2), to=-(idx+.5)*seg-Math.PI*2*6;
+    while(to>from-Math.PI*2*5)to-=Math.PI*2;
+    $('pen-result').textContent='';
+    if(reduce){wheelRot=to;drawWheel();$('pen-result').textContent=lastName()+' → '+L[idx];return}
+    spinning=true;var st=performance.now(), dur=4800;
+    function step(now){
+      var k=Math.min(1,(now-st)/dur), e=1-Math.pow(1-k,3);
+      wheelRot=from+(to-from)*e;drawWheel();
+      if(k<1)requestAnimationFrame(step);else{spinning=false;$('pen-result').textContent=lastName()+' → '+L[idx]}
+    }
+    requestAnimationFrame(step);
+  }
+  $('spin').addEventListener('click',function(){
+    if(!sim||spinning)return;
+    spinWheel();
+    if(room)room.emit('spin',{seed:raceSeed}).catch(function(){});
+  });
+  penEl.addEventListener('input',function(){if(!spinning)drawWheel()});
+  penEl.addEventListener('change',function(){if(!canWrite||penEl.value===gift.penalties)return;gift.penalties=penEl.value;saveGift()});
   window.addEventListener('resize',function(){if(sim&&!playing)drawRace(sim.frames.length-1)});
 
   function saveGift(){
-    if(!db){store.set('cw-gift',JSON.stringify({names:gift.names,race:gift.race,at:Date.now()}));return}
+    if(!db){store.set('cw-gift',JSON.stringify({names:gift.names,race:gift.race,penalties:gift.penalties,at:Date.now()}));return}
     if(giftPending){giftQueued=true;return}
     giftPending=true;
-    db.doc('settings/gift').set({names:gift.names,race:gift.race,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
+    db.doc('settings/gift').set({names:gift.names,race:gift.race,penalties:gift.penalties||penEl.value,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
       giftPending=false; if(giftQueued){giftQueued=false;saveGift()}
     });
   }
@@ -508,7 +624,7 @@ footer{font-size:.8rem;color:var(--muted)}
     var players=parseNames(namesEl.value);
     if(players.length<2){$('order-hint').hidden=false;$('order-hint').textContent='두 명 이상 적어 주세요.';return}
     var seed=Math.floor(Math.random()*2147483647);
-    gift={names:namesEl.value,race:{players:players,seed:seed}};
+    gift={names:namesEl.value,race:{players:players,seed:seed},penalties:penEl.value};
     raceSeed=seed; sim=simulate(players,seed); play(); saveGift();
   }
   function applyGift(v){
@@ -519,7 +635,8 @@ footer{font-size:.8rem;color:var(--muted)}
       var ps=r.players.filter(function(s){return typeof s==='string'}).slice(0,8);
       if(ps.length>=2)race={players:ps,seed:r.seed};
     }
-    gift={names:typeof v.names==='string'?v.names:namesEl.value,race:race};
+    if(typeof v.penalties==='string'&&document.activeElement!==penEl&&!spinning){penEl.value=v.penalties;drawWheel()}
+    gift={names:typeof v.names==='string'?v.names:namesEl.value,race:race,penalties:penEl.value};
     if(race&&race.seed!==raceSeed){
       raceSeed=race.seed; sim=simulate(race.players,race.seed);
       if(typeof v.at==='number'&&Date.now()-v.at<30000)play(); else showFinal();
@@ -533,6 +650,11 @@ footer{font-size:.8rem;color:var(--muted)}
   var started=false;
   var fallback=setTimeout(function(){if(!started)useLocal()},10000);
   if(window.claude&&window.claude.use){
+    window.claude.use('room').then(function(r){
+      if(!r)return; room=r;
+      r.on('cheer',function(m){if(m.sameTab)return;var d=m.data;if(d&&typeof d.i==='number'&&sim&&d.i>=0&&d.i<sim.players.length)addCheer(d.i)},function(){});
+      r.on('spin',function(m){if(m.sameTab)return;var d=m.data;if(d&&d.seed===raceSeed)spinWheel()},function(){});
+    }).catch(function(){});
     Promise.all([window.claude.use('db'),window.claude.use('user')]).then(function(r){
       if(!r[0]){clearTimeout(fallback);useLocal();return}
       started=true; db=r[0]; user=r[1];
