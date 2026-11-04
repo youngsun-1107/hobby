@@ -381,18 +381,19 @@ footer{font-size:.8rem;color:var(--muted)}
     var R=rng(seed), n=players.length, pos=[], fin=[], ord=[], frames=[], S=[];
     for(var i=0;i<n;i++){
       pos.push(0);fin.push(-1);
-      var ev=[], k=2+Math.floor(R()*3);
-      for(var j=0;j<k;j++)ev.push({t:1+R()*9,type:R()<.5?'boost':'slip',d:.6+R()*.7});
-      S.push({base:.078+R()*.01,ev:ev,a:R()*6,b:.6+R()*1.2,c:R()*6});
+      var ev=[], k=4+Math.floor(R()*3);
+      for(var j=0;j<k;j++)ev.push({t:1+R()*19,type:R()<.5?'boost':'slip',d:.7+R()*.9});
+      S.push({base:.043+R()*.005,ev:ev,a:R()*6,b:.4+R()*.9,c:R()*6});
     }
     var t=0;
-    while(ord.length<n&&t<40){
-      var fx=[];
+    while(ord.length<n&&t<70){
+      var fx=[], lead=Math.max.apply(null,pos);
       for(var i2=0;i2<n;i2++){
         if(fin[i2]>=0){fx.push(0);continue}
         var s=S[i2], m=1+.14*Math.sin(t*s.b+s.a)+.06*Math.sin(t*2.7+s.c), f=0;
         s.ev.forEach(function(e){if(t>=e.t&&t<e.t+e.d){f=e.type==='boost'?1:2}});
         if(f===1)m*=1.9; else if(f===2)m*=.22;
+        m*=1+Math.min(.5,(lead-pos[i2])*2.5);
         pos[i2]+=s.base*m*DT;
         if(pos[i2]>=1){pos[i2]=1;fin[i2]=t;ord.push(i2);f=0}
         fx.push(f);
