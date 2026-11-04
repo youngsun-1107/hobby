@@ -234,17 +234,19 @@ footer{font-size:.8rem;color:var(--muted)}
     'spa-hours':['12.25 영업 여부 · 노천탕 마감 시각',''],
     'mono-booking':['예약 (주말은 사전 예약 권장)','동절기 09:00~16:00 · 화요일 휴무 · 070-7372-0362'],
     'shop-alcohol':['술',''],'shop-meat':['고기',''],'shop-water':['물',''],'shop-drinks':['음료수',''],'shop-snacks':['주전부리',''],'shop-greens':['쌈채소',''],'shop-disposables':['일회용품','없는 것만'],
-    'pack-rice':['쌀',''],'pack-ramen':['라면',''],'pack-ssamjang':['쌈장',''],'pack-sides':['반찬',''],'pack-kimchi':['김치',''],'pack-herbsalt':['허브솔트',''],'pack-hotpack':['핫팩',''],
+    'pack-rice':['쌀',''],'pack-ramen':['라면',''],'pack-ssamjang':['쌈장',''],'pack-sides':['반찬',''],'pack-kimchi':['김치',''],'pack-herbsalt':['허브솔트',''],'pack-hotpack':['핫팩',''],'pack-charger':['충전기',''],'pack-bluetooth':['블루투스',''],
+    'sol-booking':['솔향기 예약',''],
     'pack-seasoning':['조미료',''],'pack-swimsuit':['수영복',''],'pack-disposables':['일회용품',''],
     'pack-boardgame':['보드게임',''],'pack-gift':['2만 원 선물','']
   };
   var GROUPS={
     trek:{title:'12.14 ~ 12.18 확인',ids:['trek'],links:[['철원군청','https://www.cwg.go.kr'],['네이버 지도','https://map.naver.com/p/search/한탄강 물윗길'],['올해 개방 일정 기사','https://foxcg.com/hantangang-river-trekking/']]},
     checkin:{title:'체크인할 때 확인',ids:['bbq-time','amenities']},
+    sol:{title:'12.26 아침에 예약',ids:['sol-booking']},
     spa:{title:'미리 확인',ids:['spa-hours'],links:[['네이버 지도','https://map.naver.com/p/search/한탄리버스파호텔']]},
     shop:{title:'장볼 것',ids:['shop-alcohol','shop-meat','shop-water','shop-drinks','shop-snacks','shop-greens','shop-disposables']},
     mono:{title:'미리 확인',ids:['mono-booking'],links:[['네이버 지도','https://map.naver.com/p/search/소이산 모노레일'],['예약 방법','https://brunch.co.kr/@dasauto/37']]},
-    pack:{ids:['pack-seasoning','pack-swimsuit','pack-disposables','pack-boardgame','pack-gift','pack-rice','pack-ramen','pack-ssamjang','pack-sides','pack-kimchi','pack-herbsalt','pack-hotpack']},
+    pack:{ids:['pack-seasoning','pack-swimsuit','pack-disposables','pack-boardgame','pack-gift','pack-rice','pack-ramen','pack-ssamjang','pack-sides','pack-kimchi','pack-herbsalt','pack-hotpack','pack-charger','pack-bluetooth']},
     shoplist:{ids:['shop-alcohol','shop-meat','shop-water','shop-drinks','shop-snacks','shop-greens','shop-disposables']}
   };
 
@@ -274,8 +276,8 @@ footer{font-size:.8rem;color:var(--muted)}
       ]}
   };
   var day2=[
-    {t:'11:30',h:'솔향기',p:'만두전골',cls:'fire',links:[['네이버 지도','https://map.naver.com/p/search/철원 솔향기']]},
-    {t:'12:00',h:'은하수교 카페',cls:'ice',links:[['네이버 지도','https://map.naver.com/p/search/은하수교 카페']]},
+    {t:'11:30',h:'솔향기',p:'만두전골',cls:'fire',links:[['네이버 지도','https://map.naver.com/p/search/철원 솔향기']],ck:'sol'},
+    {t:'12:00',h:'카페',p:'상황 보고 영선픽으로 진행',cls:'ice'},
     {t:'13:00',h:'소이산 모노레일',p:'선택 · 북한 조망 · 왕복 30분',cls:'wide',ck:'mono'}
   ];
 
