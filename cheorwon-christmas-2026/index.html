@@ -115,9 +115,25 @@ section{display:flex;flex-direction:column;gap:18px}
 .gift .row{display:flex;gap:8px;flex-wrap:wrap}
 .gift input[type=text]{flex:1 1 220px;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--night);color:var(--snow)}
 .btn{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:14px;padding:10px 18px;background:var(--crane);color:#fff}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--snow)}
+.ladder-wrap{overflow-x:auto;border-radius:16px;background:var(--night);padding-block:8px}
+#ladder{display:block;margin:0 auto}
+#ladder .rail{stroke:rgba(242,245,250,.32);stroke-width:2;stroke-linecap:round}
+#ladder .nm{cursor:pointer}
+#ladder .nm rect{fill:var(--night-3)}
+#ladder .nm.on rect{fill:var(--night-2)}
+#ladder .nm text{fill:var(--snow);font-family:var(--f-display);font-size:16px}
+#ladder .nm:focus{outline:none}
+#ladder .nm:focus-visible rect{stroke:var(--ember);stroke-width:2}
+#ladder .num circle{fill:var(--ember)}
+#ladder .num text{fill:var(--night);font-family:var(--f-mono);font-weight:700;font-size:13px}
+#ladder .path{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0}
+#ladder .path.anim{stroke-dashoffset:1;animation:drawp 1.4s ease-in-out forwards}
+@keyframes drawp{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){#ladder .path.anim{animation:none;stroke-dashoffset:0}}
 .order{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;counter-reset:o}
 .order li{counter-increment:o;background:var(--night);border-radius:99px;padding:5px 14px 5px 6px;display:flex;gap:8px;align-items:center}
-.order li::before{content:counter(o);font-family:var(--f-mono);font-size:.75rem;font-weight:700;background:var(--ember);color:var(--night);width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
+.order li::before{content:attr(data-n);font-family:var(--f-mono);font-size:.75rem;font-weight:700;background:var(--ember);color:var(--night);width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
 footer{font-size:.8rem;color:var(--muted)}
 </style>
 
@@ -177,16 +193,21 @@ footer{font-size:.8rem;color:var(--muted)}
 <section aria-labelledby="h-gift">
   <div class="sec-head">
     <h2 id="h-gift">2만 원 선물교환</h2>
-    <span class="label">순서 뽑기</span>
+    <span class="label">사다리 타기</span>
   </div>
   <div class="gift">
     <label for="names" style="color:var(--muted);font-size:.88rem">참가자 이름을 쉼표로 구분해 적어 주세요. (예시 이름)</label>
     <div class="row">
       <input type="text" id="names" value="영선, 친구1, 친구2, 친구3" autocomplete="off">
-      <button type="button" class="btn" id="draw">순서 뽑기</button>
+      <button type="button" class="btn" id="draw">사다리 만들기</button>
+    </div>
+    <p id="order-hint" style="color:var(--muted);font-size:.88rem">이름을 적고 사다리 만들기를 눌러 주세요.</p>
+    <div class="ladder-wrap" id="ladder-wrap" hidden><svg id="ladder" role="img" aria-label="선물교환 사다리"></svg></div>
+    <div class="row" id="ladder-ctl" hidden>
+      <span style="color:var(--muted);font-size:.88rem;align-self:center;flex:1 1 200px">이름을 누르면 사다리를 타고 내려가요. 숫자가 선물 고르는 순서예요.</span>
+      <button type="button" class="btn ghost" id="revealAll">결과 모두 보기</button>
     </div>
     <ol class="order" id="order" aria-live="polite"></ol>
-    <p id="order-hint" style="color:var(--muted);font-size:.88rem">아직 순서를 안 뽑았어요.</p>
   </div>
 </section>
 
@@ -213,7 +234,7 @@ footer{font-size:.8rem;color:var(--muted)}
     'spa-hours':['12.25 영업 여부 · 노천탕 마감 시각',''],
     'mono-booking':['예약 (주말은 사전 예약 권장)','동절기 09:00~16:00 · 화요일 휴무 · 070-7372-0362'],
     'shop-alcohol':['술',''],'shop-meat':['고기',''],'shop-water':['물',''],'shop-drinks':['음료수',''],'shop-snacks':['주전부리',''],'shop-greens':['쌈채소',''],'shop-disposables':['일회용품','없는 것만'],
-    'pack-rice':['쌀',''],'pack-ramen':['라면',''],'pack-ssamjang':['쌈장',''],'pack-sides':['반찬',''],'pack-kimchi':['김치',''],'pack-herbsalt':['허브솔트',''],
+    'pack-rice':['쌀',''],'pack-ramen':['라면',''],'pack-ssamjang':['쌈장',''],'pack-sides':['반찬',''],'pack-kimchi':['김치',''],'pack-herbsalt':['허브솔트',''],'pack-hotpack':['핫팩',''],
     'pack-seasoning':['조미료',''],'pack-swimsuit':['수영복',''],'pack-disposables':['일회용품',''],
     'pack-boardgame':['보드게임',''],'pack-gift':['2만 원 선물','']
   };
@@ -223,7 +244,7 @@ footer{font-size:.8rem;color:var(--muted)}
     spa:{title:'미리 확인',ids:['spa-hours'],links:[['네이버 지도','https://map.naver.com/p/search/한탄리버스파호텔']]},
     shop:{title:'장볼 것',ids:['shop-alcohol','shop-meat','shop-water','shop-drinks','shop-snacks','shop-greens','shop-disposables']},
     mono:{title:'미리 확인',ids:['mono-booking'],links:[['네이버 지도','https://map.naver.com/p/search/소이산 모노레일'],['예약 방법','https://brunch.co.kr/@dasauto/37']]},
-    pack:{ids:['pack-seasoning','pack-swimsuit','pack-disposables','pack-boardgame','pack-gift','pack-rice','pack-ramen','pack-ssamjang','pack-sides','pack-kimchi','pack-herbsalt']},
+    pack:{ids:['pack-seasoning','pack-swimsuit','pack-disposables','pack-boardgame','pack-gift','pack-rice','pack-ramen','pack-ssamjang','pack-sides','pack-kimchi','pack-herbsalt','pack-hotpack']},
     shoplist:{ids:['shop-alcohol','shop-meat','shop-water','shop-drinks','shop-snacks','shop-greens','shop-disposables']}
   };
 
@@ -351,35 +372,95 @@ footer{font-size:.8rem;color:var(--muted)}
     setSync('이 기기에만 저장',false);renderPlan();
   }
 
-  /* 선물교환 순서 (공유) */
-  var namesEl=$('names'), order=$('order'), gift={names:namesEl.value,order:[]}, giftPending=false, giftQueued=false;
-  function renderOrder(arr){
-    order.innerHTML=arr.map(function(n){return '<li>'+esc(n)+'</li>'}).join('');
-    $('order-hint').hidden=arr.length>0;
+  /* 선물교환 사다리 (이름 · 사다리는 공유, 펼쳐 보기는 각자) */
+  var namesEl=$('names'), order=$('order'), gift={names:namesEl.value,ladder:null}, giftPending=false, giftQueued=false;
+  var shown=[], lastAnim=-1, ladderKey='';
+  var COLORS=['#ff5a5f','#9fd6ff','#4fd1a1','#ffc247','#c39bff','#ff8fc7','#7fe0e0','#ffe08f','#a0b4ff','#b6ec8a'];
+  var ROWS=9, COLW=76, PADX=44, TOP=52, ROWH=26;
+  function parseNames(s){return s.split(/[,，\n]/).map(function(x){return x.trim()}).filter(Boolean).slice(0,10)}
+  function makeLadder(players){
+    var n=players.length, rungs={}, list=[];
+    function has(r,c){return !!rungs[r+'-'+c]}
+    function add(r,c){rungs[r+'-'+c]=1;list.push([r,c])}
+    for(var r=0;r<ROWS;r++)for(var c=0;c<n-1;c++){if(!has(r,c-1)&&Math.random()<.45)add(r,c)}
+    for(var c2=0;c2<n-1;c2++){
+      if(list.some(function(x){return x[1]===c2}))continue;
+      for(var t=0;t<30;t++){var rr=Math.floor(Math.random()*ROWS);if(!has(rr,c2-1)&&!has(rr,c2+1)){add(rr,c2);break}}
+    }
+    return {players:players,rungs:list};
   }
+  function trace(L,start){
+    var set={};L.rungs.forEach(function(x){set[x[0]+'-'+x[1]]=1});
+    var c=start, pts=[[c,-1]];
+    for(var r=0;r<ROWS;r++){
+      if(set[r+'-'+c]){pts.push([c,r]);c++;pts.push([c,r])}
+      else if(set[r+'-'+(c-1)]){pts.push([c,r]);c--;pts.push([c,r])}
+    }
+    pts.push([c,ROWS]);
+    return {end:c,pts:pts};
+  }
+  function X(c){return PADX+c*COLW}
+  function Y(r){return r<0?TOP:r>=ROWS?TOP+(ROWS+1)*ROWH:TOP+(r+1)*ROWH}
+  function renderLadder(){
+    var L=gift.ladder, svg=$('ladder');
+    var ok=L&&L.players.length>=2;
+    $('ladder-wrap').hidden=!ok; $('ladder-ctl').hidden=!ok; $('order-hint').hidden=!!ok;
+    if(!ok){svg.innerHTML='';order.innerHTML='';return}
+    var n=L.players.length, W=PADX*2+(n-1)*COLW, H=Y(ROWS)+40;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('width',W); svg.setAttribute('height',H);
+    var h='';
+    for(var c=0;c<n;c++)h+='<line class="rail" x1="'+X(c)+'" y1="'+TOP+'" x2="'+X(c)+'" y2="'+Y(ROWS)+'"/>';
+    L.rungs.forEach(function(x){h+='<line class="rail" x1="'+X(x[1])+'" y1="'+Y(x[0])+'" x2="'+X(x[1]+1)+'" y2="'+Y(x[0])+'"/>'});
+    shown.forEach(function(i){
+      var tr=trace(L,i), pts=tr.pts.map(function(p){return X(p[0])+','+Y(p[1])}).join(' ');
+      h+='<polyline class="path'+(i===lastAnim?' anim':'')+'" pathLength="1" points="'+pts+'" style="stroke:'+COLORS[i%COLORS.length]+'"/>';
+    });
+    L.players.forEach(function(p,i){
+      h+='<g class="nm'+(shown.indexOf(i)>=0?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc(p)+' 사다리 타기">'+
+         '<rect x="'+(X(i)-COLW/2+4)+'" y="6" width="'+(COLW-8)+'" height="34" rx="12"/>'+
+         '<text x="'+X(i)+'" y="29" text-anchor="middle">'+esc(p.length>5?p.slice(0,5)+'…':p)+'</text></g>';
+    });
+    for(var k=0;k<n;k++)h+='<g class="num"><circle cx="'+X(k)+'" cy="'+(Y(ROWS)+18)+'" r="14"/><text x="'+X(k)+'" y="'+(Y(ROWS)+22.5)+'" text-anchor="middle">'+(k+1)+'</text></g>';
+    svg.innerHTML=h; lastAnim=-1;
+    var res=L.players.map(function(p,i){return {p:p,i:i,end:trace(L,i).end}}).filter(function(o){return shown.indexOf(o.i)>=0}).sort(function(a,b){return a.end-b.end});
+    order.innerHTML=res.map(function(o){return '<li data-n="'+(o.end+1)+'">'+esc(o.p)+'</li>'}).join('');
+  }
+  function reveal(i){if(shown.indexOf(i)<0){shown.push(i);lastAnim=i}renderLadder()}
+  $('ladder').addEventListener('click',function(e){var g=e.target.closest&&e.target.closest('.nm');if(g)reveal(+g.dataset.i)});
+  $('ladder').addEventListener('keydown',function(e){var g=e.target.closest&&e.target.closest('.nm');if(g&&(e.key==='Enter'||e.key===' ')){e.preventDefault();reveal(+g.dataset.i)}});
+  $('revealAll').addEventListener('click',function(){if(gift.ladder){shown=gift.ladder.players.map(function(_,i){return i});lastAnim=-1;renderLadder()}});
   function saveGift(){
     if(!db){store.set('cw-gift',JSON.stringify(gift));return}
     if(giftPending){giftQueued=true;return}
     giftPending=true;
-    db.doc('settings/gift').set({names:gift.names,order:gift.order,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
+    var L=gift.ladder;
+    db.doc('settings/gift').set({names:gift.names,ladder:L?{players:L.players,rungs:L.rungs.map(function(x){return x[0]+'-'+x[1]})}:null,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
       giftPending=false; if(giftQueued){giftQueued=false;saveGift()}
     });
   }
   function draw(){
     if(!canWrite)return;
-    var arr=namesEl.value.split(/[,，\n]/).map(function(s){return s.trim()}).filter(Boolean);
-    for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t}
-    gift={names:namesEl.value,order:arr}; renderOrder(arr); saveGift();
+    var players=parseNames(namesEl.value);
+    if(players.length<2){$('order-hint').hidden=false;$('order-hint').textContent='두 명 이상 적어 주세요.';return}
+    gift={names:namesEl.value,ladder:makeLadder(players)}; shown=[]; ladderKey=JSON.stringify(gift.ladder); renderLadder(); saveGift();
   }
   function applyGift(v){
     if(!v)return;
     if(typeof v.names==='string'&&document.activeElement!==namesEl)namesEl.value=v.names;
-    gift={names:typeof v.names==='string'?v.names:namesEl.value,order:Array.isArray(v.order)?v.order.filter(function(s){return typeof s==='string'}):[]};
-    renderOrder(gift.order);
+    var L=null, l=v.ladder;
+    if(l&&Array.isArray(l.players)&&Array.isArray(l.rungs)){
+      L={players:l.players.filter(function(s){return typeof s==='string'}).slice(0,10),
+         rungs:l.rungs.map(function(s){var m=typeof s==='string'?s.split('-'):Array.isArray(s)?s:[];return [parseInt(m[0],10),parseInt(m[1],10)]})
+           .filter(function(x){return x[0]>=0&&x[0]<ROWS&&x[1]>=0&&x[1]<l.players.length-1})};
+    }
+    var key=JSON.stringify(L);
+    if(key!==ladderKey){shown=[];ladderKey=key}
+    gift={names:typeof v.names==='string'?v.names:namesEl.value,ladder:L};
+    renderLadder();
   }
   $('draw').addEventListener('click',draw);
   namesEl.addEventListener('change',function(){if(!canWrite||namesEl.value===gift.names)return;gift.names=namesEl.value;saveGift()});
-  renderOrder([]);
+  renderLadder();
 
   renderPlan();
   var started=false;
