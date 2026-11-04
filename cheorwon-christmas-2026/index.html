@@ -98,6 +98,15 @@ header.hero{padding-top:48px;display:flex;flex-direction:column;gap:14px;positio
 .check label{flex:1 1 260px}
 .links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.85rem;padding:0 2px 10px 36px}
 @media (min-width:600px){.links{padding:0 2px}}
+.chk{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;background:var(--surface)}
+.chk .ck-title{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;color:var(--crane)}
+.chk label{display:flex;gap:8px;align-items:flex-start;font-size:.88rem;cursor:pointer;line-height:1.45}
+.chk input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--ice);flex:none}
+.chk input:checked + span{text-decoration:line-through;color:var(--muted)}
+.chk small{display:block;color:var(--muted);font-size:.78rem}
+.chk .ck-links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.82rem;padding-left:24px}
+.decide .chk{margin-top:0;background:var(--bg)}
+.ck-links-inline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.85rem}
 footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
 </style>
 
@@ -138,38 +147,8 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
         <span class="s">트래킹 불가</span>
       </button>
     </div>
+    <div id="ck-trek"></div>
   </div>
-</section>
-
-<section aria-labelledby="h-check">
-  <span class="eyebrow">Before you go</span>
-  <h2 id="h-check">확인할 것</h2>
-  <ul class="list check">
-    <li>
-      <label for="chk-check-0"><input type="checkbox" id="chk-check-0" data-k="check:트래킹"><span>한탄강 물윗길 트래킹 가능 여부<small>12.14 ~ 12.18 확인 · 09:00~17:00, 매표 마감 16:00, 화요일 휴무</small></span></label>
-      <div class="links">
-        <a href="https://www.cwg.go.kr" target="_blank" rel="noopener">철원군청</a>
-        <a href="https://map.naver.com/p/search/한탄강 물윗길" target="_blank" rel="noopener">네이버 지도</a>
-        <a href="https://foxcg.com/hantangang-river-trekking/" target="_blank" rel="noopener">올해 개방 일정 기사</a>
-      </div>
-    </li>
-    <li>
-      <label for="chk-check-1"><input type="checkbox" id="chk-check-1" data-k="check:온천"><span>한탄리버스파 운영시간<small>12.25 영업 여부 · 노천탕 마감 시각</small></span></label>
-      <div class="links">
-        <a href="https://map.naver.com/p/search/한탄리버스파호텔" target="_blank" rel="noopener">네이버 지도</a>
-      </div>
-    </li>
-    <li>
-      <label for="chk-check-2"><input type="checkbox" id="chk-check-2" data-k="check:체크인"><span>체크인 때 바베큐 시간 · 비품<small>12.25 체크인할 때</small></span></label>
-    </li>
-    <li>
-      <label for="chk-check-3"><input type="checkbox" id="chk-check-3" data-k="check:모노레일"><span>소이산 모노레일 예약<small>12.26 (토) · 동절기 09:00~16:00, 화요일 휴무 · 주말은 사전 예약 권장 · 070-7372-0362</small></span></label>
-      <div class="links">
-        <a href="https://map.naver.com/p/search/소이산 모노레일" target="_blank" rel="noopener">네이버 지도</a>
-        <a href="https://brunch.co.kr/@dasauto/37" target="_blank" rel="noopener">예약 방법</a>
-      </div>
-    </li>
-  </ul>
 </section>
 
 <section aria-labelledby="h-day">
@@ -181,11 +160,7 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
 <section aria-labelledby="h-day2">
   <span class="eyebrow">12.26 (토)</span>
   <h2 id="h-day2">다음 날</h2>
-  <ol class="tl">
-    <li class="key"><span class="time">11:30</span><span class="rail"><span class="dot"></span></span><div class="body"><h3>솔향기 · 만두전골</h3><p><a href="https://map.naver.com/p/search/철원 솔향기" target="_blank" rel="noopener">네이버 지도</a></p></div></li>
-    <li><span class="time">12:00</span><span class="rail"><span class="dot"></span></span><div class="body"><h3>은하수교 카페</h3><p><a href="https://map.naver.com/p/search/은하수교 카페" target="_blank" rel="noopener">네이버 지도</a></p></div></li>
-    <li><span class="time">13:00</span><span class="rail"><span class="dot"></span></span><div class="body"><h3>소이산 모노레일 (선택)</h3><p>북한 조망 · 왕복 30분 · <a href="https://map.naver.com/p/search/소이산 모노레일" target="_blank" rel="noopener">네이버 지도</a></p></div></li>
-  </ol>
+  <ol class="tl" id="timeline2"></ol>
 </section>
 
 <section aria-labelledby="h-steps">
@@ -258,11 +233,11 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
       ['13:00','다시 출발','',''],
       ['14:00','철원 도착','','key'],
       ['14:10','유영선 발자취 투어','초·중·고 → 엄마 가게 → 아빠 가게 → 시내',''],
-      ['15:10','체크인','바베큐 시간 · 비품 확인',''],
+      ['15:10','체크인','','','checkin'],
       ['15:20','한탄강 물윗길 트래킹','1시간 30분 · 매표 마감 16:00','key'],
       ['16:50','고석정','','key'],
-      ['17:20','한탄리버스파','노천탕 · 고석정과 같은 곳',''],
-      ['18:50','롯데슈퍼 장보기','술 · 고기 · 물',''],
+      ['17:20','한탄리버스파','노천탕 · 고석정과 같은 곳','','spa'],
+      ['18:50','롯데슈퍼 장보기','','','shop'],
       ['19:20','집 도착 · 바베큐','양갈비 + 영선표 된장찌개','night'],
       ['21:30','보드게임 · 술 · 선물교환','','night']
     ]},
@@ -272,41 +247,69 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
       ['14:00','다시 출발','',''],
       ['15:00','철원 도착','','key'],
       ['15:10','유영선 발자취 투어','초·중·고 → 엄마 가게 → 아빠 가게 → 시내','key'],
-      ['16:10','체크인','바베큐 시간 · 비품 확인',''],
+      ['16:10','체크인','','','checkin'],
       ['16:20','고석정','',''],
-      ['16:50','한탄리버스파','노천탕 · 고석정과 같은 곳',''],
-      ['18:20','롯데슈퍼 장보기','술 · 고기 · 물',''],
+      ['16:50','한탄리버스파','노천탕 · 고석정과 같은 곳','','spa'],
+      ['18:20','롯데슈퍼 장보기','','','shop'],
       ['18:50','집 도착 · 바베큐','양갈비 + 영선표 된장찌개','night'],
       ['21:00','보드게임 · 술 · 선물교환','','night']
     ]}
   };
+  var day2=[
+    ['11:30','솔향기 · 만두전골','','key',null,[['네이버 지도','https://map.naver.com/p/search/철원 솔향기']]],
+    ['12:00','은하수교 카페','','',null,[['네이버 지도','https://map.naver.com/p/search/은하수교 카페']]],
+    ['13:00','소이산 모노레일 (선택)','북한 조망 · 왕복 30분','','mono']
+  ];
+
+  // 시간대별 확인할 것 (key는 체크 상태 저장용)
+  var CK={
+    trek:{title:'12.14 ~ 12.18 확인',items:[['check:트래킹','한탄강 물윗길 운영 여부','09:00~17:00 · 매표 마감 16:00 · 화요일 휴무']],
+      links:[['철원군청','https://www.cwg.go.kr'],['네이버 지도','https://map.naver.com/p/search/한탄강 물윗길'],['올해 개방 일정 기사','https://foxcg.com/hantangang-river-trekking/']]},
+    checkin:{title:'체크인할 때 확인',items:[['check:바베큐시간','바베큐 몇 시에 가능한지',''],['check:비품','비품 뭐가 있는지','']]},
+    spa:{title:'미리 확인',items:[['check:온천','12.25 영업 여부 · 노천탕 마감 시각','']],
+      links:[['네이버 지도','https://map.naver.com/p/search/한탄리버스파호텔']]},
+    shop:{title:'장볼 것',items:[['shop:술','술',''],['shop:고기','고기',''],['shop:물','물','']]},
+    mono:{title:'미리 확인',items:[['check:모노레일','예약 (주말은 사전 예약 권장)','동절기 09:00~16:00 · 화요일 휴무 · 070-7372-0362']],
+      links:[['네이버 지도','https://map.naver.com/p/search/소이산 모노레일'],['예약 방법','https://brunch.co.kr/@dasauto/37']]}
+  };
+  var done={}; try{done=JSON.parse(store.get('cw-done')||'{}')||{}}catch(e){done={}}
+  var uid=0;
+  function linksHTML(ls,cls){
+    return ls&&ls.length?'<div class="'+cls+'">'+ls.map(function(l){return '<a href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+'</a>'}).join('')+'</div>':'';
+  }
+  function ckHTML(name){
+    var c=CK[name]; if(!c)return '';
+    return '<div class="chk"><span class="ck-title">'+esc(c.title)+'</span>'+c.items.map(function(it){
+      var id='ck-'+(uid++);
+      return '<label for="'+id+'"><input type="checkbox" id="'+id+'" data-k="'+esc(it[0])+'"'+(done[it[0]]?' checked':'')+'><span>'+esc(it[1])+(it[2]?'<small>'+esc(it[2])+'</small>':'')+'</span></label>';
+    }).join('')+linksHTML(c.links,'ck-links')+'</div>';
+  }
+  function tlHTML(items){
+    return items.map(function(it){
+      return '<li class="'+it[3]+'"><span class="time">'+it[0]+'</span><span class="rail"><span class="dot"></span></span><div class="body"><h3>'+esc(it[1])+'</h3>'+(it[2]?'<p>'+esc(it[2])+'</p>':'')+(it[5]?linksHTML(it[5],'ck-links-inline'):'')+ckHTML(it[4])+'</div></li>';
+    }).join('');
+  }
+
   var tl=document.getElementById('timeline'), lbl=document.getElementById('planLabel');
   function setPlan(p){
     if(!plans[p])p='a';
     document.querySelectorAll('.seg button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.plan===p?'true':'false')});
     lbl.textContent=plans[p].label;
-    tl.innerHTML=plans[p].items.map(function(it){
-      return '<li class="'+it[3]+'"><span class="time">'+it[0]+'</span><span class="rail"><span class="dot"></span></span><div class="body"><h3>'+esc(it[1])+'</h3>'+(it[2]?'<p>'+esc(it[2])+'</p>':'')+'</div></li>';
-    }).join('');
+    tl.innerHTML=tlHTML(plans[p].items);
     store.set('cw-plan',p);
   }
   document.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){setPlan(b.dataset.plan)})});
+  document.getElementById('ck-trek').innerHTML=ckHTML('trek');
+  document.getElementById('timeline2').innerHTML=tlHTML(day2);
   setPlan(store.get('cw-plan')||'a');
 
   var lists={pack:['조미료','수영복','일회용품','보드게임','2만 원 선물'],shop:['술','고기','물']};
-  var done={}; try{done=JSON.parse(store.get('cw-done')||'{}')||{}}catch(e){done={}}
   function render(key){
-    var ul=document.getElementById('list-'+key);
-    ul.innerHTML=lists[key].map(function(t,i){
+    document.getElementById('list-'+key).innerHTML=lists[key].map(function(t,i){
       var id='chk-'+key+'-'+i, k=key+':'+t;
       return '<li><label for="'+id+'"><input type="checkbox" id="'+id+'" data-k="'+esc(k)+'"'+(done[k]?' checked':'')+'><span>'+esc(t)+'</span></label></li>';
     }).join('');
     prog(key);
-    ul.addEventListener('change',function(e){
-      var k=e.target.dataset.k; if(!k)return;
-      if(e.target.checked)done[k]=1; else delete done[k];
-      store.set('cw-done',JSON.stringify(done)); prog(key);
-    });
   }
   function prog(key){
     var n=lists[key].filter(function(t){return done[key+':'+t]}).length;
@@ -314,12 +317,13 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
   }
   render('pack'); render('shop');
 
-  document.querySelectorAll('.check input').forEach(function(c){
-    if(done[c.dataset.k])c.checked=true;
-    c.addEventListener('change',function(){
-      if(c.checked)done[c.dataset.k]=1; else delete done[c.dataset.k];
-      store.set('cw-done',JSON.stringify(done));
-    });
+  // 같은 항목은 어디서 체크해도 함께 바뀜 (예: 롯데슈퍼 칸 ↔ 장볼 것 목록)
+  document.addEventListener('change',function(e){
+    var k=e.target.dataset&&e.target.dataset.k; if(!k)return;
+    if(e.target.checked)done[k]=1; else delete done[k];
+    store.set('cw-done',JSON.stringify(done));
+    document.querySelectorAll('input[data-k]').forEach(function(c){if(c.dataset.k===k)c.checked=e.target.checked});
+    prog('pack'); prog('shop');
   });
 
   var namesEl=document.getElementById('names'), order=document.getElementById('order');
