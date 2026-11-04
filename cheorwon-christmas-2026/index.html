@@ -107,6 +107,9 @@ section{display:flex;flex-direction:column;gap:18px}
 .bingo-act{background:var(--night-2);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-width:560px}
 .bingo-act .row{display:flex;flex-wrap:wrap;gap:8px}
 #act-title{font-family:var(--f-display);font-weight:400;font-size:1.3rem}
+.paste-zone{min-height:52px;padding:14px;border:1.5px dashed var(--line);border-radius:14px;color:var(--snow);font-size:.88rem;outline:none;-webkit-user-select:text;user-select:text}
+.paste-zone:empty::before{content:"사진 선택 창이 안 열리면: 사진 앱에서 사진을 복사한 뒤, 여기를 길게 눌러 붙여넣기";color:var(--muted)}
+.paste-zone:focus{border-color:var(--ember)}
 .filebtn{position:relative;overflow:hidden;display:inline-flex;align-items:center}
 .filebtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px}
 .filebtn:focus-within{outline:2px solid var(--ember);outline-offset:2px}
@@ -229,6 +232,7 @@ footer{font-size:.8rem;color:var(--muted)}
       <button type="button" class="btn ghost" id="act-check">사진 없이 도장</button>
       <button type="button" class="btn ghost" id="act-clear">도장 취소</button>
     </div>
+    <div class="paste-zone" id="paste-zone" contenteditable="true" role="textbox" aria-label="사진 붙여넣기"></div>
     <p id="bingo-msg" hidden></p>
   </div>
   <p class="master" id="stamp-master" hidden>철원 정복!</p>
@@ -745,6 +749,7 @@ footer{font-size:.8rem;color:var(--muted)}
   $('stamps').addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('.stamp');if(!b)return;
     var i=+b.dataset.i; sel=sel===i?-1:i; $('bingo-msg').hidden=true; renderStamps();
+    if(sel>=0){try{$('bingo-act').scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'})}catch(e){}}
   });
   function setStamp(i,data,pop){
     var id=STAMPS[i][0];
@@ -762,13 +767,12 @@ footer{font-size:.8rem;color:var(--muted)}
     }
     if(window.createImageBitmap)createImageBitmap(f).then(function(bm){ok(bm,bm.width,bm.height)},viaReader);else viaReader();
   }
-  $('bingo-file').addEventListener('change',function(){
-    var f=this.files&&this.files[0], i=sel, inp=this;
-    if(!f||i<0){inp.value='';return}
-    if(f.type&&!/^image\//.test(f.type)){inp.value='';alertMsg('사진 파일만 올릴 수 있어요.');return}
+  function handleFile(f){
+    var i=sel;
+    if(!f||i<0)return;
+    if(f.type&&!/^image\//.test(f.type)){alertMsg('사진 파일만 올릴 수 있어요.');return}
     $('bingo-msg').hidden=true;$('act-who').textContent='사진 줄이는 중…';
     decodeImage(f,function(src,w,h){
-      inp.value='';
       try{
         function enc(max,q){var k=Math.min(1,max/Math.max(w,h)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(w*k));cv.height=Math.max(1,Math.round(h*k));cv.getContext('2d').drawImage(src,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',q)}
         var d=enc(640,.66); if(d.length>180000)d=enc(480,.5); if(d.length>180000)d=enc(360,.45);
@@ -776,8 +780,22 @@ footer{font-size:.8rem;color:var(--muted)}
         $('act-who').textContent='올리는 중…';
         setStamp(i,{done:true,photo:d,by:myId||null,at:Date.now()},true);
       }catch(e){alertMsg('사진을 줄이지 못했어요. 다른 사진을 골라 주세요.');renderAct()}
-    },function(){inp.value='';alertMsg('이 사진 형식은 열 수 없어요. 스크린샷이나 다른 사진으로 해 주세요.');renderAct()});
+    },function(){alertMsg('이 사진 형식은 열 수 없어요. 스크린샷이나 다른 사진으로 해 주세요.');renderAct()});
+  }
+  $('bingo-file').addEventListener('change',function(){var f=this.files&&this.files[0];this.value='';handleFile(f)});
+  /* Claude 앱처럼 사진 선택 창이 안 열리는 곳: 복사한 사진 붙여넣기 */
+  $('paste-zone').addEventListener('paste',function(e){
+    e.preventDefault();
+    if(!canWrite)return;
+    var cd=e.clipboardData, f=null;
+    if(cd){
+      var items=cd.items||[];
+      for(var k=0;k<items.length;k++)if(items[k].kind==='file'&&/^image\//.test(items[k].type)){f=items[k].getAsFile();break}
+      if(!f&&cd.files&&cd.files.length)f=cd.files[0];
+    }
+    if(f)handleFile(f);else alertMsg('붙여넣은 것에 사진이 없어요. 사진 앱에서 사진을 "복사"한 뒤 다시 붙여넣어 주세요.');
   });
+  $('paste-zone').addEventListener('input',function(){this.textContent=''});
 
   /* 다 모으면 축하 */
   function celebrate(){
