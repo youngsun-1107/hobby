@@ -88,6 +88,37 @@ section{display:flex;flex-direction:column;gap:18px}
 .slot.tour .t{color:var(--snow)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:.8rem;padding:3px 10px;border-radius:99px;background:rgba(242,245,250,.08);color:var(--snow)}
+.chip.on{background:var(--crane);color:#fff}
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (min-width:640px){.stamps{grid-template-columns:repeat(6,1fr)}}
+.stamp{font:inherit;background:transparent;border:0;color:var(--snow);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px;min-width:0}
+.stamp:disabled{cursor:default}
+.stamp .ring{width:100%;max-width:104px;aspect-ratio:1;border-radius:50%;border:2px dashed rgba(242,245,250,.25);display:grid;place-items:center;position:relative;background:var(--night-2)}
+.stamp .place{font-family:var(--f-display);font-size:1.05rem;text-align:center;padding:0 6px;line-height:1.15}
+.stamp.on .ring{border:3px solid var(--crane);background:rgba(255,90,95,.12);transform:rotate(-8deg)}
+.stamp.on .place{color:var(--crane)}
+.stamp .ink{position:absolute;bottom:15%;font-family:var(--f-mono);font-size:.62rem;font-weight:700;letter-spacing:.2em;color:var(--crane);border:1.5px solid var(--crane);padding:0 5px 0 7px;border-radius:4px}
+.stamp .by{font-size:.75rem;color:var(--muted);text-align:center}
+.stamp.pop .ring{animation:stampin .35s ease-out}
+@keyframes stampin{0%{transform:scale(1.6) rotate(-20deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+.master{font-family:var(--f-display);font-size:1.5rem;color:var(--ember);text-align:center;padding:12px;border:2px solid var(--ember);border-radius:18px}
+.bingo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:560px}
+.cell{position:relative;aspect-ratio:1;border:0;border-radius:16px;background:var(--night-2);color:var(--snow);font:inherit;cursor:pointer;overflow:hidden;padding:9px;display:flex;align-items:flex-end;text-align:left;min-width:0}
+.cell .mt{position:relative;z-index:1;word-break:keep-all;font-family:var(--f-display);font-size:.98rem;line-height:1.2}
+.cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cell.ph::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 35%,rgba(0,0,0,.7))}
+.cell.on{background:#17413c}
+.cell .ok{position:absolute;z-index:1;top:7px;right:7px;width:24px;height:24px;border-radius:50%;background:var(--pine);color:var(--night);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.cell.sel{outline:3px solid var(--ember);outline-offset:2px}
+.bingo-act{background:var(--night-2);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-width:560px}
+.bingo-act .row{display:flex;flex-wrap:wrap;gap:8px}
+#act-title{font-family:var(--f-display);font-weight:400;font-size:1.3rem}
+#act-who,#bingo-msg{font-size:.85rem;color:var(--muted)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;width:100vw;height:100vh}
+#bingo-toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:51;font-family:var(--f-hero);font-size:4.5rem;color:var(--ember);text-shadow:0 4px 0 var(--night);pointer-events:none}
+#bingo-toast.go{animation:toast 1.8s ease-out forwards}
+@keyframes toast{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}80%{opacity:1}100%{transform:translate(-50%,-62%) scale(1);opacity:0}}
+@media (prefers-reduced-motion:reduce){.stamp.pop .ring,#bingo-toast.go{animation:none}}
 .links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem}
 
 /* shared checks */
@@ -186,6 +217,33 @@ footer{font-size:.8rem;color:var(--muted)}
   <div class="slots" id="slots2"></div>
 </section>
 
+<section aria-labelledby="h-stamp">
+  <div class="sec-head">
+    <h2 id="h-stamp">발자취 스탬프</h2>
+    <span class="pill" id="stamp-prog">0 / 6</span>
+  </div>
+  <div class="stamps" id="stamps"></div>
+  <p class="master" id="stamp-master" hidden>영선 마스터 달성!</p>
+</section>
+
+<section aria-labelledby="h-bingo">
+  <div class="sec-head">
+    <h2 id="h-bingo">철원 사진 빙고</h2>
+    <span class="pill" id="bingo-lines">빙고 0줄</span>
+  </div>
+  <div class="bingo" id="bingo"></div>
+  <div class="bingo-act" id="bingo-act" hidden>
+    <div><h3 id="act-title"></h3><span id="act-who"></span></div>
+    <div class="row">
+      <button type="button" class="btn" id="act-photo">사진 올리기</button>
+      <button type="button" class="btn ghost" id="act-check">사진 없이 완료</button>
+      <button type="button" class="btn ghost" id="act-clear">완료 취소</button>
+    </div>
+    <p id="bingo-msg" hidden></p>
+  </div>
+  <input type="file" id="bingo-file" accept="image/*" hidden>
+</section>
+
 <section aria-labelledby="h-list">
   <div class="sec-head">
     <h2 id="h-list">챙길 것</h2>
@@ -227,6 +285,8 @@ footer{font-size:.8rem;color:var(--muted)}
   </div>
 </section>
 
+<canvas id="confetti" hidden aria-hidden="true"></canvas>
+<div id="bingo-toast" hidden>빙고!</div>
 <footer>물윗길 · 모노레일 정보는 공개 기사 기준이에요.</footer>
 </div>
 
@@ -298,7 +358,7 @@ footer{font-size:.8rem;color:var(--muted)}
   ];
 
   /* 상태 */
-  var state={};            // id -> {done, by}
+  var state={}, stampState={};            // id -> {done, by}
   var canWrite=true, db=null, user=null, myId=null, names={};
   var plan='a';
 
@@ -313,9 +373,10 @@ footer{font-size:.8rem;color:var(--muted)}
   }
   function slotHTML(s){
     return '<article class="slot '+(s.cls||'')+'"><span class="t">'+s.t+'</span><h3>'+esc(s.h)+'</h3>'+(s.p?'<p>'+esc(s.p)+'</p>':'')+
-      (s.chips?'<div class="chips">'+s.chips.map(function(c){return '<span class="chip">'+esc(c)+'</span>'}).join('')+'</div>':'')+
+      (s.chips?'<div class="chips">'+s.chips.map(function(c){return '<span class="chip'+(stampOn(c)?' on':'')+'">'+esc(c)+'</span>'}).join('')+'</div>':'')+
       linksHTML(s.links)+ckHTML(s.ck)+'</article>';
   }
+  function stampOn(c){if(!STAMPS)return false;for(var i=0;i<STAMPS.length;i++)if(STAMPS[i][1]===c){var x=stampState[STAMPS[i][0]];return !!(x&&x.done)}return false}
   function renderPlan(){
     var P=plans[plan];
     document.querySelectorAll('.switch button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.plan===plan?'true':'false')});
@@ -348,9 +409,9 @@ footer{font-size:.8rem;color:var(--muted)}
   }
   function resolveNames(){
     if(!user||!user.profiles)return;
-    var ids=[];Object.keys(state).forEach(function(k){var b=state[k].by;if(b&&ids.indexOf(b)<0)ids.push(b)});
+    var ids=[];[state,stampState,bingoState||{}].forEach(function(o){Object.keys(o).forEach(function(k){var b=o[k]&&o[k].by;if(b&&ids.indexOf(b)<0)ids.push(b)})});
     if(!ids.length)return;
-    Promise.resolve(user.profiles(ids)).then(function(ps){names=ps||{};paint()}).catch(function(){});
+    Promise.resolve(user.profiles(ids)).then(function(ps){names=ps||{};paint();renderStamps();renderBingo()}).catch(function(){});
   }
 
   /* 쓰기: 문서당 한 번에 하나 */
@@ -387,6 +448,7 @@ footer{font-size:.8rem;color:var(--muted)}
     try{state=JSON.parse(store.get('cw-local')||'{}')||{}}catch(e){state={}}
     plan=store.get('cw-plan')==='b'?'b':'a';
     try{applyGift(JSON.parse(store.get('cw-gift')||'null'))}catch(e){}
+    loadExtrasLocal();
     setSync('이 기기에만 저장',false);renderPlan();
   }
 
@@ -646,6 +708,121 @@ footer{font-size:.8rem;color:var(--muted)}
   $('replay').addEventListener('click',play);
   namesEl.addEventListener('change',function(){if(!canWrite||namesEl.value===gift.names)return;gift.names=namesEl.value;saveGift()});
 
+  /* 발자취 스탬프 + 사진 빙고 (공유) */
+  var STAMPS=[['s-elem','초등학교'],['s-middle','중학교'],['s-high','고등학교'],['s-mom','엄마 가게'],['s-dad','아빠 가게'],['s-town','시내']];
+  var MISSIONS=['두루미 발견','고석정 단체샷','한탄강 배경 인증','온천 앞 인증샷','엄마·아빠 가게 인증','양갈비 굽는 순간','보드게임 승자 포즈','소이산에서 북쪽 바라보기','만두전골 한 숟갈'];
+  var LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  var bingoState={}, bingoInit=false, lastLines=0, bingoSel=-1;
+  var xPending={}, xQueued={};
+  function writeDoc(coll,id,data,localKey,localState){
+    if(!db){localState[id]=data;store.set(localKey,JSON.stringify(localState));return Promise.resolve()}
+    var key=coll+'/'+id;
+    if(xPending[key]){xQueued[key]=data;return Promise.resolve()}
+    xPending[key]=true;
+    return db.collection(coll).doc(id).set(data).catch(function(e){if(e&&e.code==='quota_exceeded')alertMsg('저장 공간이 꽉 찼어요. 사진 몇 장을 지워 주세요.')}).then(function(){
+      xPending[key]=false; if(xQueued[key]){var d=xQueued[key];delete xQueued[key];writeDoc(coll,id,d,localKey,localState)}
+    });
+  }
+  function alertMsg(t){var el=$('bingo-msg');if(el){el.textContent=t;el.hidden=false}}
+  function whoName(by){var p=by&&names[by];return p&&p.name?p.name:''}
+
+  /* 스탬프 */
+  function renderStamps(){
+    var n=0;
+    $('stamps').innerHTML=STAMPS.map(function(s){
+      var st=stampState[s[0]], on=!!(st&&st.done); if(on)n++;
+      var w=on?whoName(st.by):'';
+      return '<button type="button" class="stamp'+(on?' on':'')+'" data-stamp="'+s[0]+'" aria-pressed="'+on+'"'+(canWrite?'':' disabled')+'>'+
+        '<span class="ring"><span class="place">'+esc(s[1])+'</span>'+(on?'<span class="ink">도착</span>':'')+'</span>'+
+        '<span class="by">'+(on?esc(w?w+' 찍음':'도착 완료'):'눌러서 도장')+'</span></button>';
+    }).join('');
+    $('stamp-prog').textContent=n+' / '+STAMPS.length;
+    $('stamp-master').hidden=n<STAMPS.length;
+  }
+  $('stamps').addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.stamp');if(!b||!canWrite)return;
+    var id=b.dataset.stamp, on=!(stampState[id]&&stampState[id].done);
+    stampState[id]={done:on,by:myId||null,at:Date.now()};
+    renderStamps();renderPlan();
+    if(on){var nb=document.querySelector('.stamp[data-stamp="'+id+'"]');if(nb)nb.classList.add('pop')}
+    writeDoc('stamps',id,{done:on,by:myId||null,at:Date.now()},'cw-stamps',stampState);
+  });
+
+  /* 빙고 */
+  function lineCount(){return LINES.filter(function(l){return l.every(function(i){var b=bingoState['b'+i];return b&&b.done})}).length}
+  function renderBingo(){
+    $('bingo').innerHTML=MISSIONS.map(function(m,i){
+      var b=bingoState['b'+i], on=!!(b&&b.done), ph=on&&typeof b.photo==='string'&&b.photo.indexOf('data:image/')===0?b.photo:'';
+      return '<button type="button" class="cell'+(on?' on':'')+(ph?' ph':'')+(bingoSel===i?' sel':'')+'" data-cell="'+i+'">'+
+        (ph?'<img src="'+ph+'" alt="">':'')+'<span class="mt">'+esc(m)+'</span>'+(on?'<span class="ok">✓</span>':'')+'</button>';
+    }).join('');
+    var lc=lineCount();
+    $('bingo-lines').textContent='빙고 '+lc+'줄';
+    if(bingoInit&&lc>lastLines)celebrate();
+    lastLines=lc;
+    renderAct();
+  }
+  function renderAct(){
+    var box=$('bingo-act');
+    if(bingoSel<0){box.hidden=true;return}
+    var b=bingoState['b'+bingoSel], on=!!(b&&b.done), w=on?whoName(b.by):'';
+    box.hidden=false;
+    $('act-title').textContent=MISSIONS[bingoSel];
+    $('act-who').textContent=on?(w?w+'님이 완료':'완료됨'):'아직 안 했어요';
+    $('act-photo').disabled=!canWrite;$('act-check').hidden=on;$('act-check').disabled=!canWrite;$('act-clear').hidden=!on;$('act-clear').disabled=!canWrite;
+  }
+  $('bingo').addEventListener('click',function(e){
+    var c=e.target.closest&&e.target.closest('.cell');if(!c)return;
+    var i=+c.dataset.cell; bingoSel=bingoSel===i?-1:i; $('bingo-msg').hidden=true; renderBingo();
+  });
+  function setCell(i,data){bingoState['b'+i]=data;renderBingo();writeDoc('bingo','b'+i,data,'cw-bingo',bingoState)}
+  $('act-check').addEventListener('click',function(){if(bingoSel>=0&&canWrite)setCell(bingoSel,{done:true,photo:null,by:myId||null,at:Date.now()})});
+  $('act-clear').addEventListener('click',function(){if(bingoSel>=0&&canWrite)setCell(bingoSel,{done:false,photo:null,by:myId||null,at:Date.now()})});
+  $('act-photo').addEventListener('click',function(){if(canWrite)$('bingo-file').click()});
+  $('bingo-file').addEventListener('change',function(){
+    var f=this.files&&this.files[0], i=bingoSel; this.value='';
+    if(!f||i<0)return;
+    if(!/^image\//.test(f.type)){alertMsg('사진 파일만 올릴 수 있어요.');return}
+    $('act-who').textContent='사진 줄이는 중…';
+    var url=URL.createObjectURL(f), img=new Image();
+    img.onload=function(){
+      function enc(max,q){var s=Math.min(1,max/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',q)}
+      var d=enc(640,.66); if(d.length>180000)d=enc(480,.5); if(d.length>180000)d=enc(360,.45);
+      URL.revokeObjectURL(url);
+      setCell(i,{done:true,photo:d,by:myId||null,at:Date.now()});
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);alertMsg('이 사진은 열 수 없어요. 다른 사진을 골라 주세요.');renderAct()};
+    img.src=url;
+  });
+
+  /* 빙고 축하 */
+  function celebrate(){
+    var t=$('bingo-toast');t.hidden=false;t.classList.remove('go');void t.offsetWidth;t.classList.add('go');
+    setTimeout(function(){t.hidden=true},1800);
+    if(reduce)return;
+    var cv=$('confetti'),cx=cv.getContext&&cv.getContext('2d');if(!cx)return;
+    var W=cv.width=window.innerWidth,H=cv.height=window.innerHeight,P=[];
+    for(var i=0;i<120;i++)P.push({x:W/2,y:H*.45,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,c:COLORS[i%COLORS.length],r:Math.random()*Math.PI,s:4+Math.random()*5});
+    var st=performance.now();cv.hidden=false;
+    (function f(now){
+      var e=(now-st)/1000;cx.clearRect(0,0,W,H);
+      P.forEach(function(p){p.vy+=.45;p.x+=p.vx;p.y+=p.vy;p.r+=.2;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);cx.restore()});
+      if(e<2.2)requestAnimationFrame(f);else{cx.clearRect(0,0,W,H);cv.hidden=true}
+    })(st);
+  }
+
+  function readMap(snap){var m={};snap.docs.forEach(function(d){var v=d.data();if(v)m[d.id]={done:!!v.done,by:typeof v.by==='string'?v.by:null,photo:typeof v.photo==='string'?v.photo:null}});return m}
+  function subscribeExtras(){
+    db.collection('stamps').onSnapshot(function(snap){stampState=readMap(snap);renderStamps();renderPlan();resolveNames()},function(){});
+    db.collection('bingo').onSnapshot(function(snap){bingoState=readMap(snap);renderBingo();bingoInit=true;resolveNames()},function(){});
+  }
+  function loadExtrasLocal(){
+    try{stampState=JSON.parse(store.get('cw-stamps')||'{}')||{}}catch(e){stampState={}}
+    try{bingoState=JSON.parse(store.get('cw-bingo')||'{}')||{}}catch(e){bingoState={}}
+    renderStamps();renderBingo();bingoInit=true;
+  }
+  renderStamps();renderBingo();
+
   renderPlan();
   var started=false;
   var fallback=setTimeout(function(){if(!started)useLocal()},10000);
@@ -661,6 +838,7 @@ footer{font-size:.8rem;color:var(--muted)}
       var tm=setTimeout(function(){setSync('연결 지연',false)},10000);
       Promise.resolve(user&&user.id?user.id():null).then(function(id){myId=id}).catch(function(){});
       Promise.resolve(user&&user.can?user.can('data.write'):null).then(function(c){if(c===false){canWrite=false;setSync('보기 전용',true);paint()}}).catch(function(){});
+      subscribeExtras();
       db.collection('checks').onSnapshot(function(snap){
         var next={};snap.docs.forEach(function(d){var v=d.data();if(v)next[d.id]={done:!!v.done,by:v.by||null}});
         state=next;paint();resolveNames();
