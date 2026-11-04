@@ -93,6 +93,11 @@ header.hero{padding-top:48px;display:flex;flex-direction:column;gap:14px;positio
 .order{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;counter-reset:o}
 .order li{counter-increment:o;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:4px 12px 4px 6px;font-size:.9rem;display:flex;gap:8px;align-items:center}
 .order li::before{content:counter(o);font-family:var(--f-mono);font-size:.75rem;background:var(--ink);color:var(--bg);width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
+.list small{display:block;color:var(--muted);font-size:.8rem;line-height:1.4}
+.check li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0 12px}
+.check label{flex:1 1 260px}
+.links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.85rem;padding:0 2px 10px 36px}
+@media (min-width:600px){.links{padding:0 2px}}
 footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
 </style>
 
@@ -133,8 +138,28 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
         <span class="s">트래킹 불가</span>
       </button>
     </div>
-    <p class="note">물윗길 09:00~17:00, 매표 마감 16:00 · 화요일 휴무 · 확인처 <a href="https://www.cwg.go.kr" target="_blank" rel="noopener">철원군청</a></p>
   </div>
+</section>
+
+<section aria-labelledby="h-check">
+  <span class="eyebrow">Before you go</span>
+  <h2 id="h-check">확인할 것</h2>
+  <ul class="list check">
+    <li>
+      <label for="chk-check-0"><input type="checkbox" id="chk-check-0" data-k="check:트래킹"><span>한탄강 물윗길 트래킹 가능 여부<small>12.14 ~ 12.18 확인 · 09:00~17:00, 매표 마감 16:00, 화요일 휴무</small></span></label>
+      <div class="links">
+        <a href="https://www.cwg.go.kr" target="_blank" rel="noopener">철원군청</a>
+        <a href="https://map.naver.com/p/search/한탄강 물윗길" target="_blank" rel="noopener">네이버 지도</a>
+        <a href="https://foxcg.com/hantangang-river-trekking/" target="_blank" rel="noopener">올해 개방 일정 기사</a>
+      </div>
+    </li>
+    <li>
+      <label for="chk-check-1"><input type="checkbox" id="chk-check-1" data-k="check:온천"><span>한탄강 온천 운영시간<small>12.25 영업 여부 · 노천탕 마감 시각</small></span></label>
+      <div class="links">
+        <a href="https://map.naver.com/p/search/한탄강 온천" target="_blank" rel="noopener">네이버 지도</a>
+      </div>
+    </li>
+  </ul>
 </section>
 
 <section aria-labelledby="h-day">
@@ -212,8 +237,9 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
       ['12:00','휴게소 점심 + 커피','',''],
       ['13:00','다시 출발','',''],
       ['14:00','철원 도착','','key'],
-      ['14:10','한탄강 물윗길 트래킹 + 고석정','매표 마감 16:00','key'],
-      ['16:30','유영선 발자취 투어','초·중·고 → 엄마 가게 → 아빠 가게 → 시내',''],
+      ['14:10','한탄강 물윗길 트래킹','1시간 30분','key'],
+      ['15:40','고석정','','key'],
+      ['16:20','유영선 발자취 투어','초·중·고 → 엄마 가게 → 아빠 가게 → 시내',''],
       ['18:00','한탄강 온천','노천탕',''],
       ['19:30','롯데슈퍼 장보기','술 · 고기 · 물',''],
       ['20:00','집 도착 · 바베큐','양갈비 + 영선표 된장찌개','night'],
@@ -264,6 +290,14 @@ footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);paddi
     document.getElementById('prog-'+key).textContent=n+' / '+lists[key].length;
   }
   render('pack'); render('shop');
+
+  document.querySelectorAll('.check input').forEach(function(c){
+    if(done[c.dataset.k])c.checked=true;
+    c.addEventListener('change',function(){
+      if(c.checked)done[c.dataset.k]=1; else delete done[c.dataset.k];
+      store.set('cw-done',JSON.stringify(done));
+    });
+  });
 
   var namesEl=document.getElementById('names'), order=document.getElementById('order');
   var saved=store.get('cw-names'); if(saved)namesEl.value=saved;
