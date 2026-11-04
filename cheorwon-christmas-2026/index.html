@@ -113,6 +113,9 @@ section{display:flex;flex-direction:column;gap:18px}
 .bingo-act{background:var(--night-2);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-width:560px}
 .bingo-act .row{display:flex;flex-wrap:wrap;gap:8px}
 #act-title{font-family:var(--f-display);font-weight:400;font-size:1.3rem}
+#act-photo{display:inline-flex;align-items:center}
+#act-photo[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
 #act-who,#bingo-msg{font-size:.85rem;color:var(--muted)}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:50;width:100vw;height:100vh}
 #bingo-toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:51;font-family:var(--f-hero);font-size:4.5rem;color:var(--ember);text-shadow:0 4px 0 var(--night);pointer-events:none}
@@ -235,13 +238,13 @@ footer{font-size:.8rem;color:var(--muted)}
   <div class="bingo-act" id="bingo-act" hidden>
     <div><h3 id="act-title"></h3><span id="act-who"></span></div>
     <div class="row">
-      <button type="button" class="btn" id="act-photo">사진 올리기</button>
+      <label class="btn" id="act-photo" for="bingo-file" tabindex="0" role="button">사진 올리기</label>
       <button type="button" class="btn ghost" id="act-check">사진 없이 완료</button>
       <button type="button" class="btn ghost" id="act-clear">완료 취소</button>
     </div>
     <p id="bingo-msg" hidden></p>
   </div>
-  <input type="file" id="bingo-file" accept="image/*" hidden>
+  <input type="file" id="bingo-file" class="vh" accept="image/*" tabindex="-1">
 </section>
 
 <section aria-labelledby="h-list">
@@ -769,7 +772,7 @@ footer{font-size:.8rem;color:var(--muted)}
     box.hidden=false;
     $('act-title').textContent=MISSIONS[bingoSel];
     $('act-who').textContent=on?(w?w+'님이 완료':'완료됨'):'아직 안 했어요';
-    $('act-photo').disabled=!canWrite;$('act-check').hidden=on;$('act-check').disabled=!canWrite;$('act-clear').hidden=!on;$('act-clear').disabled=!canWrite;
+    $('act-photo').setAttribute('aria-disabled',canWrite?'false':'true');$('bingo-file').disabled=!canWrite;$('act-check').hidden=on;$('act-check').disabled=!canWrite;$('act-clear').hidden=!on;$('act-clear').disabled=!canWrite;
   }
   $('bingo').addEventListener('click',function(e){
     var c=e.target.closest&&e.target.closest('.cell');if(!c)return;
@@ -778,7 +781,7 @@ footer{font-size:.8rem;color:var(--muted)}
   function setCell(i,data){bingoState['b'+i]=data;renderBingo();writeDoc('bingo','b'+i,data,'cw-bingo',bingoState)}
   $('act-check').addEventListener('click',function(){if(bingoSel>=0&&canWrite)setCell(bingoSel,{done:true,photo:null,by:myId||null,at:Date.now()})});
   $('act-clear').addEventListener('click',function(){if(bingoSel>=0&&canWrite)setCell(bingoSel,{done:false,photo:null,by:myId||null,at:Date.now()})});
-  $('act-photo').addEventListener('click',function(){if(canWrite)$('bingo-file').click()});
+  $('act-photo').addEventListener('keydown',function(e){if(canWrite&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('bingo-file').click()}});
   $('bingo-file').addEventListener('change',function(){
     var f=this.files&&this.files[0], i=bingoSel; this.value='';
     if(!f||i<0)return;
