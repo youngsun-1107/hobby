@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: 겨울밤 포스터. 도로 스트립(이동) + 벤토 카드(머무는 곳). 한 가지 밤 톤으로 고정.
    색: 철원의 밤 · 눈 · 얼음 · 두루미 정수리 · 숯불 */
@@ -17,7 +17,8 @@
   --crane:#ff5a5f;
   --ember:#ffc247;
   --pine:#4fd1a1;
-  --f-display:"Bagel Fat One","Black Han Sans","Apple SD Gothic Neo",sans-serif;
+  --f-hero:"Bagel Fat One","Jua","Apple SD Gothic Neo",sans-serif;
+  --f-display:"Jua","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   color-scheme:dark;
@@ -38,7 +39,7 @@ section{display:flex;flex-direction:column;gap:18px}
 /* hero */
 .hero{position:relative;padding-block:56px 8px;display:flex;flex-direction:column;gap:18px;isolation:isolate}
 .hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
-.hero h1{font-family:var(--f-display);font-weight:400;line-height:.86;letter-spacing:-.02em;font-size:clamp(4.6rem,22vw,10rem)}
+.hero h1{font-family:var(--f-hero);font-weight:400;line-height:.86;letter-spacing:-.02em;font-size:clamp(4.6rem,22vw,10rem)}
 .hero h1 span{display:block}
 .hero h1 .x{color:var(--crane);font-size:.5em;letter-spacing:0}
 .meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -185,6 +186,7 @@ footer{font-size:.8rem;color:var(--muted)}
       <button type="button" class="btn" id="draw">순서 뽑기</button>
     </div>
     <ol class="order" id="order" aria-live="polite"></ol>
+    <p id="order-hint" style="color:var(--muted);font-size:.88rem">아직 순서를 안 뽑았어요.</p>
   </div>
 </section>
 
@@ -344,8 +346,39 @@ footer{font-size:.8rem;color:var(--muted)}
     db=null;
     try{state=JSON.parse(store.get('cw-local')||'{}')||{}}catch(e){state={}}
     plan=store.get('cw-plan')==='b'?'b':'a';
+    try{applyGift(JSON.parse(store.get('cw-gift')||'null'))}catch(e){}
     setSync('이 기기에만 저장',false);renderPlan();
   }
+
+  /* 선물교환 순서 (공유) */
+  var namesEl=$('names'), order=$('order'), gift={names:namesEl.value,order:[]}, giftPending=false, giftQueued=false;
+  function renderOrder(arr){
+    order.innerHTML=arr.map(function(n){return '<li>'+esc(n)+'</li>'}).join('');
+    $('order-hint').hidden=arr.length>0;
+  }
+  function saveGift(){
+    if(!db){store.set('cw-gift',JSON.stringify(gift));return}
+    if(giftPending){giftQueued=true;return}
+    giftPending=true;
+    db.doc('settings/gift').set({names:gift.names,order:gift.order,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
+      giftPending=false; if(giftQueued){giftQueued=false;saveGift()}
+    });
+  }
+  function draw(){
+    if(!canWrite)return;
+    var arr=namesEl.value.split(/[,，\n]/).map(function(s){return s.trim()}).filter(Boolean);
+    for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t}
+    gift={names:namesEl.value,order:arr}; renderOrder(arr); saveGift();
+  }
+  function applyGift(v){
+    if(!v)return;
+    if(typeof v.names==='string'&&document.activeElement!==namesEl)namesEl.value=v.names;
+    gift={names:typeof v.names==='string'?v.names:namesEl.value,order:Array.isArray(v.order)?v.order.filter(function(s){return typeof s==='string'}):[]};
+    renderOrder(gift.order);
+  }
+  $('draw').addEventListener('click',draw);
+  namesEl.addEventListener('change',function(){if(!canWrite||namesEl.value===gift.names)return;gift.names=namesEl.value;saveGift()});
+  renderOrder([]);
 
   renderPlan();
   var started=false;
@@ -362,23 +395,13 @@ footer{font-size:.8rem;color:var(--muted)}
         state=next;paint();resolveNames();
         if(!snap.metadata.fromCache){clearTimeout(tm);clearTimeout(fallback);if(canWrite)setSync('실시간 공유 중',true)}
       },function(){clearTimeout(tm);setSync('공유 연결 끊김',false)});
+      db.doc('settings/gift').onSnapshot(function(d){if(d.exists)applyGift(d.data())},function(){});
       db.doc('settings/plan').onSnapshot(function(d){
         var v=d.exists&&d.data(); if(v&&(v.plan==='a'||v.plan==='b')&&v.plan!==plan&&!planPending){plan=v.plan;renderPlan()}
       },function(){});
     }).catch(function(){clearTimeout(fallback);useLocal()});
   }else{clearTimeout(fallback);useLocal()}
 
-  /* 선물교환 순서 (각자 기기) */
-  var namesEl=$('names'), order=$('order');
-  var saved=store.get('cw-names'); if(saved)namesEl.value=saved;
-  function draw(){
-    var arr=namesEl.value.split(/[,，\n]/).map(function(s){return s.trim()}).filter(Boolean);
-    for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t}
-    order.innerHTML=arr.map(function(n){return '<li>'+esc(n)+'</li>'}).join('');
-    store.set('cw-names',namesEl.value);
-  }
-  $('draw').addEventListener('click',draw);
-  draw();
 
   /* 눈 */
   var cv=$('snow'),cx=cv.getContext&&cv.getContext('2d');
