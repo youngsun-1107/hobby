@@ -222,7 +222,7 @@ footer{font-size:.8rem;color:var(--muted)}
 <section aria-labelledby="h-stamp">
   <div class="sec-head">
     <h2 id="h-stamp">철원 스탬프</h2>
-    <span class="pill" id="stamp-prog">0 / 10</span>
+    <span class="pill" id="stamp-prog">0 / 9</span>
   </div>
   <div class="stamps" id="stamps"></div>
   <div class="bingo-act" id="bingo-act" hidden>
@@ -327,7 +327,6 @@ footer{font-size:.8rem;color:var(--muted)}
         {t:'15:10',h:'체크인',p:'10분',ck:'checkin'},
         {t:'15:20',h:'한탄강 물윗길 트래킹',p:'1시간 30분 · 매표 마감 16:00',cls:'ice wide'},
         {t:'16:50',h:'고석정',cls:'ice'},
-        {t:'17:20',h:'한탄리버스파',p:'노천탕 · 고석정과 같은 곳',cls:'spa',ck:'spa'},
         {t:'18:50',h:'롯데슈퍼',ck:'shop'},
         {t:'19:20',h:'바베큐',p:'양갈비 · 삼겹살 · 목살 + 영선표 된장찌개',cls:'fire wide'},
         {t:'21:30',h:'보드게임 · 술 · 선물교환',cls:'night wide'}
@@ -338,7 +337,6 @@ footer{font-size:.8rem;color:var(--muted)}
         {t:'15:10',h:'유영선 발자취 투어',cls:'tour wide',chips:['초등학교','중학교','고등학교','엄마 가게','아빠 가게','시내']},
         {t:'16:10',h:'체크인',p:'10분',ck:'checkin'},
         {t:'16:20',h:'고석정',cls:'ice'},
-        {t:'16:50',h:'한탄리버스파',p:'노천탕 · 고석정과 같은 곳',cls:'spa',ck:'spa'},
         {t:'18:20',h:'롯데슈퍼',ck:'shop'},
         {t:'18:50',h:'바베큐',p:'양갈비 · 삼겹살 · 목살 + 영선표 된장찌개',cls:'fire wide'},
         {t:'21:00',h:'보드게임 · 술 · 선물교환',cls:'night wide'}
@@ -707,7 +705,7 @@ footer{font-size:.8rem;color:var(--muted)}
   namesEl.addEventListener('change',function(){if(!canWrite||namesEl.value===gift.names)return;gift.names=namesEl.value;saveGift()});
 
   /* 철원 스탬프 (사진 인증, 공유) */
-  var STAMPS=[['st0','두루미 발견'],['st1','고석정 단체샷'],['st2','한탄강 배경 인증'],['st3','온천 앞 인증샷'],['st4','엄마·아빠 가게 인증'],
+  var STAMPS=[['st0','두루미 발견'],['st1','고석정 단체샷'],['st2','한탄강 배경 인증'],['st4','엄마·아빠 가게 인증'],
               ['st5','영선 모교 인증'],['st6','양갈비 굽는 순간'],['st7','보드게임 승자 포즈'],['st8','소이산에서 북쪽 바라보기'],['st9','만두전골 한 숟갈']];
   var bingoState=null, stampInit=false, lastDone=0, sel=-1;
   var xPending={}, xQueued={};
