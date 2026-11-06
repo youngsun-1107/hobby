@@ -466,22 +466,27 @@ footer{font-size:.8rem;color:var(--muted)}
     for(var q=0;q<n;q++)prevFx.push(0);
     function say(arr,i){var tx=arr[Math.floor(t*7)%arr.length].replace('{n}',players[i]);comms.push({t:t,s:tx});lastMsg=t}
     while(ord.length<n&&t<70){
-      var fx=[], lead=Math.max.apply(null,pos);
+      var fx=[], lead=Math.max.apply(null,pos), cross=[];
       for(var i2=0;i2<n;i2++){
         if(fin[i2]>=0){fx.push(0);continue}
         var s=S[i2], m=1+.14*Math.sin(t*s.b+s.a)+.06*Math.sin(t*2.7+s.c), f=0;
         s.ev.forEach(function(e){if(t>=e.t&&t<e.t+e.d){f=e.type==='boost'?1:2}});
         if(f===1)m*=1.9; else if(f===2)m*=.22;
         m*=1+Math.min(.5,(lead-pos[i2])*2.5);
-        pos[i2]+=s.base*m*DT;
-        if(pos[i2]>=1){pos[i2]=1;fin[i2]=t;ord.push(i2);f=0;
-          var rk=ord.length;
-          if(rk===1)say(['{n} 1등으로 골인!','{n} 우승! 선물 먼저 고릅니다'],i2);
-          else if(rk===n)say(['{n} 마지막 도착… 벌칙 룰렛 대기','{n} 꼴등 확정… 벌칙 각'],i2);
-          else comms.push({t:t,s:players[i2]+' '+rk+'등 골인'});
-        }
+        var prev=pos[i2], step=s.base*m*DT;
+        pos[i2]+=step;
+        if(pos[i2]>=1){cross.push({i:i2,fr:(1-prev)/step});pos[i2]=1;f=0}
         fx.push(f);
       }
+      /* 같은 프레임에 들어오면 실제로 선을 먼저 넘은 순서대로 (레인 순서 영향 없음) */
+      cross.sort(function(x,y){return x.fr-y.fr});
+      cross.forEach(function(c){
+        var i2=c.i; fin[i2]=t+c.fr*DT; ord.push(i2);
+        var rk=ord.length;
+        if(rk===1)say(['{n} 1등으로 골인!','{n} 우승! 선물 먼저 고릅니다'],i2);
+        else if(rk===n)say(['{n} 마지막 도착… 벌칙 룰렛 대기','{n} 꼴등 확정… 벌칙 각'],i2);
+        else comms.push({t:t,s:players[i2]+' '+rk+'등 골인'});
+      });
       for(var i3=0;i3<n;i3++){
         if(fx[i3]&&fx[i3]!==prevFx[i3]&&t-lastMsg>.6)say(fx[i3]===1?['{n} 부스트! 치고 나갑니다','{n} 엄청난 가속!','{n} 눈길을 가릅니다!']:['{n} 꽈당… 아쉽습니다','{n} 미끄러집니다!','{n} 눈덩이에 걸렸어요'],i3);
       }
