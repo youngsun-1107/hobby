@@ -102,6 +102,29 @@ a { color: var(--accent); }
 .tl-item.deadline { border-left: 3px solid var(--urgent); }
 .tl-item .label { font-weight: 600; }
 .today-mark { color: var(--accent); }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-nav h2 { font-size: 1.05rem; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cal-h { background: var(--surface); text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--muted); padding: 6px 0; }
+.cal-h.sun, .cal-d.sun .num { color: var(--urgent); }
+.cal-d { background: var(--surface); border: none; border-radius: 0; min-height: 78px; padding: 4px 3px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; min-width: 0; }
+.cal-d:hover { border: none; background: var(--accent-soft); }
+.cal-d.other { background: var(--bg); }
+.cal-d.other .num, .cal-d.other .ev { opacity: .45; }
+.cal-d.sel { box-shadow: inset 0 0 0 2px var(--accent); }
+.cal-d .num { font-family: var(--font-data); font-size: 0.78rem; font-weight: 600; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; font-variant-numeric: tabular-nums; }
+.cal-d.today .num { background: var(--accent); color: var(--surface); }
+.ev { font-size: 0.68rem; line-height: 1.35; padding: 1px 4px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--accent-soft); color: var(--accent); }
+.ev.deadline { background: var(--urgent-soft); color: var(--urgent); font-weight: 600; }
+.ev.start { background: var(--ok-soft); color: var(--ok); }
+.ev.more { background: none; color: var(--muted); padding: 0 4px; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; background: var(--accent-soft); border: 1px solid var(--accent); }
+.legend i.deadline { background: var(--urgent-soft); border-color: var(--urgent); }
+.legend i.start { background: var(--ok-soft); border-color: var(--ok); }
+.pending { font-size: 0.88rem; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+@media (max-width: 420px) { .cal-d { min-height: 64px; } .ev { font-size: 0.62rem; padding: 1px 2px; } }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg);
   padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; max-width: calc(100% - 32px); z-index: 20; }
 .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sp 0.8s linear infinite; vertical-align: -1px; }
@@ -120,8 +143,12 @@ a { color: var(--accent); }
   var jobs = [];
   try { jobs = JSON.parse(document.getElementById("jobs-data").textContent) || []; } catch (e) { jobs = []; }
 
-  var ui = { tab: "list", showPast: false, editing: null, busy: false, readOnly: false, mode: "loading", aiState: "unknown", msg: "" };
-  var artifactApi = null, sampleApi = null;
+  // Scheduled task that reads pending links (fired through the Claude Code Remote connector). Empty: not set up.
+  var TRIGGER_ID = "";
+  var now0 = new Date();
+  var ui = { tab: "calendar", showPast: false, editing: null, busy: false, readOnly: false, mode: "loading",
+    calY: now0.getFullYear(), calM: now0.getMonth(), selDay: null };
+  var artifactApi = null, sampleApi = null, mcpApi = null;
 
   // ---------- helpers ----------
   function h(tag, props) {
@@ -242,12 +269,14 @@ a { color: var(--accent); }
     var out = document.getElementById("f-out");
     if (!safeUrl(url)) { out.textContent = "https:// 로 시작하는 공고 링크를 넣어 주세요."; return; }
     if (!text) {
-      var j = newJob({ url: url, title: "제목 없음 (직접 입력)" });
-      jobs.push(j); ui.editing = j.id; render();
-      toast("링크만 추가했어요. 회사명과 마감일을 채운 뒤 저장해 주세요.");
+      var host = ""; try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (x) {}
+      var pj = newJob({ url: url, title: "공고 읽는 중", company: host, pending: true });
+      jobs.push(pj);
+      try { sessionStorage.removeItem("jb-draft"); } catch (x) {}
+      requestAnalysis().then(function () { save("링크를 등록했어요. Claude가 본문을 읽고 채워 넣을 거예요."); });
       return;
     }
-    if (!sampleApi) { out.textContent = "이 화면에서는 AI 정리를 쓸 수 없어요. 본문을 비우고 추가하면 직접 입력할 수 있어요."; return; }
+    if (!sampleApi) { out.textContent = "이 화면에서는 본문 정리를 쓸 수 없어요. 본문을 비우고 링크만 추가해 주세요."; return; }
     var btn = document.getElementById("f-submit");
     btn.disabled = true; out.textContent = ""; out.appendChild(h("span", { class: "spin" })); out.appendChild(document.createTextNode(" 공고를 읽고 정리하는 중이에요. 보통 10~40초 걸려요."));
     sampleApi.json(buildPrompt(url, text)).then(function (d) {
@@ -259,11 +288,18 @@ a { color: var(--accent); }
     }, function (e) {
       btn.disabled = false;
       var c = e && e.code;
-      out.textContent = c === "not_granted" ? "Claude 사용을 허용하지 않아서 정리하지 못했어요. 본문을 비우고 추가하면 직접 입력할 수 있어요."
+      out.textContent = c === "not_granted" ? "Claude 사용을 허용하지 않아서 정리하지 못했어요. 본문을 비우고 링크만 추가해 주세요."
         : c === "rate_limited" ? "요청이 많아요. 잠시 후 다시 눌러 주세요."
         : c === "invalid_json" ? "정리 결과를 읽지 못했어요. 한 번 더 눌러 주세요."
-        : "정리하지 못했어요. 잠시 후 다시 해 보거나, 본문을 비우고 직접 입력해 주세요.";
+        : "정리하지 못했어요. 잠시 후 다시 해 보거나, 본문을 비우고 링크만 추가해 주세요.";
     });
+  }
+
+  // Ask the scheduled task to read pending links. Resolves true when the request went out.
+  function requestAnalysis() {
+    if (!TRIGGER_ID || !mcpApi) return Promise.resolve(false);
+    return mcpApi.callTool("Claude Code Remote", "fire_trigger", { trigger_id: TRIGGER_ID, text: "대기 중인 공고 링크를 읽어 주세요." })
+      .then(function () { return true; }, function () { return false; });
   }
 
   // ---------- views ----------
@@ -313,6 +349,10 @@ a { color: var(--accent); }
         h("div", null, h("div", { class: "company", text: j.company || "회사 미입력" }), h("h3", { class: "title", text: j.title || "제목 없음" })),
         deadlineChip(j)),
       meta,
+      j.pending ? h("div", { class: "pending" }, h("span", { class: "spin" }),
+        TRIGGER_ID ? "Claude가 공고를 읽는 중이에요. 보통 2~5분 걸리고, 끝나면 화면이 자동으로 바뀌어요."
+          : "본문 읽기 대기 중이에요. Claude 대화에서 \"보드 대기 공고 정리해줘\"라고 하면 채워져요.") : null,
+      j.fetchError ? h("div", { class: "banner warn", text: j.fetchError }) : null,
       j.process.length ? h("div", { class: "steps", "aria-label": "전형 절차" }, j.process.map(function (p) { return h("span", { text: p }); })) : null,
       j.schedule.length ? h("ul", { class: "sched" }, j.schedule.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (s) {
         return h("li", null, h("time", { datetime: s.date, text: fmtDate(s.date) }), h("span", { text: s.label }));
@@ -350,6 +390,7 @@ a { color: var(--accent); }
       e.preventDefault();
       var u = f.url.value.trim();
       Object.assign(j, {
+        pending: false, fetchError: "",
         company: f.company.value.trim(), title: f.title.value.trim() || "제목 없음", url: safeUrl(u) ? u : j.url,
         employment: f.employment.value.trim(), location: f.location.value.trim(),
         applyStart: f.applyStart.value, applyEnd: f.applyEnd.value, applyEndTime: f.applyEndTime.value, applyNote: f.applyNote.value.trim(),
@@ -385,29 +426,72 @@ a { color: var(--accent); }
   function addPanel() {
     if (ui.readOnly) return null;
     var draft = ""; try { draft = sessionStorage.getItem("jb-draft") || ""; } catch (e) {}
-    var text = h("textarea", { id: "f-text", rows: 4, value: draft,
-      placeholder: "공고 페이지에서 본문을 전체 선택해 복사한 뒤 여기에 붙여넣어 주세요. 비워 두면 링크만 저장하고 직접 입력할 수 있어요.",
+    var text = h("textarea", { id: "f-text", rows: 3, value: draft,
+      placeholder: "비워 두면 Claude가 링크를 열어 읽어요. 로그인해야 보이는 공고라면 본문을 복사해 붙여넣어 주세요.",
       on: { input: function (e) { try { sessionStorage.setItem("jb-draft", e.target.value); } catch (x) {} } } });
     return h("form", { class: "panel", on: { submit: addFromForm } },
       h("h2", { style: "font-size:1.02rem", text: "공고 추가" }),
       h("label", null, "공고 링크", h("input", { id: "f-url", type: "url", inputMode: "url", placeholder: "https://", required: true })),
-      h("label", null, "공고 본문", text),
+      h("label", null, "공고 본문 (선택)", text),
       h("div", { class: "row" },
-        h("button", { id: "f-submit", class: "primary", type: "submit", text: "정리해서 추가", disabled: ui.busy }),
+        h("button", { id: "f-submit", class: "primary", type: "submit", text: "추가", disabled: ui.busy }),
         h("p", { id: "f-out", class: "hint", "aria-live": "polite" })),
-      h("p", { class: "hint", text: "추가하면 Claude가 접수기간, 전형 일정, JD를 뽑아 카드로 만들어요. 처음 한 번 Claude 사용 허용을 물어봐요." }));
+      h("p", { class: "hint", text: "Claude가 접수기간, 전형 일정, JD를 뽑아 카드와 달력에 넣어요. 처음 한 번 Claude 사용 허용을 물어봐요." }));
   }
 
-  function timeline() {
+  function collectEvents() {
     var ev = [];
     jobs.forEach(function (j) {
       if (j.status === "불합격" || j.status === "포기") return;
-      var name = (j.company ? j.company + " · " : "") + j.title;
-      if (validDate(j.applyStart)) ev.push({ date: j.applyStart, label: "접수 시작", name: name });
-      if (validDate(j.applyEnd)) ev.push({ date: j.applyEnd, label: "접수 마감" + (j.applyEndTime ? " " + j.applyEndTime : ""), name: name, deadline: true });
-      j.schedule.forEach(function (s) { ev.push({ date: s.date, label: s.label, name: name }); });
+      var name = j.company || j.title;
+      var full = (j.company ? j.company + " · " : "") + j.title;
+      if (validDate(j.applyStart)) ev.push({ date: j.applyStart, kind: "start", label: "접수 시작", name: name, full: full });
+      if (validDate(j.applyEnd)) ev.push({ date: j.applyEnd, kind: "deadline", label: "접수 마감" + (j.applyEndTime ? " " + j.applyEndTime : ""), name: name, full: full, deadline: true });
+      j.schedule.forEach(function (s) { ev.push({ date: s.date, kind: "sched", label: s.label, name: name, full: full }); });
     });
-    ev = ev.filter(function (e) { return ui.showPast || daysUntil(e.date) >= 0; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    var order = { deadline: 0, sched: 1, start: 2 };
+    return ev.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : order[a.kind] - order[b.kind]; });
+  }
+
+  function calendar() {
+    var ev = collectEvents(), byDay = {};
+    ev.forEach(function (e) { (byDay[e.date] = byDay[e.date] || []).push(e); });
+    var y = ui.calY, m = ui.calM, first = new Date(y, m, 1), start = new Date(y, m, 1 - first.getDay());
+    var weeks = Math.ceil((first.getDay() + new Date(y, m + 1, 0).getDate()) / 7);
+    var today = todayStr();
+    function shift(n) { var d = new Date(ui.calY, ui.calM + n, 1); ui.calY = d.getFullYear(); ui.calM = d.getMonth(); ui.selDay = null; render(); }
+    var grid = h("div", { class: "cal", role: "grid", "aria-label": y + "년 " + (m + 1) + "월" },
+      WD.map(function (w, i) { return h("div", { class: "cal-h" + (i === 0 ? " sun" : ""), role: "columnheader", text: w }); }));
+    for (var i = 0; i < weeks * 7; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var ds = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+      var items = byDay[ds] || [];
+      var cls = "cal-d" + (d.getMonth() !== m ? " other" : "") + (ds === today ? " today" : "") + (ds === ui.selDay ? " sel" : "") + (d.getDay() === 0 ? " sun" : "");
+      grid.appendChild(h("button", { class: cls, type: "button", "aria-label": fmtDate(ds) + (items.length ? ", 일정 " + items.length + "개" : ""),
+        on: { click: (function (v) { return function () { ui.selDay = ui.selDay === v ? null : v; render(); }; })(ds) } },
+        h("span", { class: "num", text: d.getDate() }),
+        items.slice(0, 2).map(function (e) { return h("span", { class: "ev " + e.kind, text: e.name }); }),
+        items.length > 2 ? h("span", { class: "ev more", text: "+" + (items.length - 2) }) : null));
+    }
+    var sel = ui.selDay ? byDay[ui.selDay] || [] : null;
+    return h("div", { class: "list" },
+      h("div", { class: "cal-nav" },
+        h("button", { class: "ghost", type: "button", "aria-label": "이전 달", text: "‹ 이전", on: { click: function () { shift(-1); } } }),
+        h("h2", { text: y + ". " + pad(m + 1) }),
+        h("div", { class: "row" },
+          h("button", { class: "ghost", type: "button", text: "오늘", on: { click: function () { ui.calY = now0.getFullYear(); ui.calM = now0.getMonth(); ui.selDay = today; render(); } } }),
+          h("button", { class: "ghost", type: "button", "aria-label": "다음 달", text: "다음 ›", on: { click: function () { shift(1); } } }))),
+      grid,
+      h("div", { class: "legend" }, h("span", null, h("i", { class: "deadline" }), "접수 마감"), h("span", null, h("i"), "전형 일정"), h("span", null, h("i", { class: "start" }), "접수 시작")),
+      sel ? h("section", { class: "tl-day" },
+        h("div", { class: "tl-date", text: fmtDate(ui.selDay) }),
+        sel.length ? sel.map(function (e) {
+          return h("div", { class: "tl-item" + (e.deadline ? " deadline" : "") }, h("span", { class: "label", text: e.label }), h("span", { text: e.full }));
+        }) : h("p", { class: "hint", text: "이 날은 일정이 없어요." })) : h("p", { class: "hint", text: "날짜를 누르면 그날 일정이 아래에 나와요." }));
+  }
+
+  function timeline() {
+    var ev = collectEvents().filter(function (e) { return ui.showPast || daysUntil(e.date) >= 0; });
     if (!ev.length) return h("div", { class: "empty", text: "앞으로 남은 일정이 없어요. 공고를 추가하면 접수 마감과 전형 일정이 날짜순으로 모여요." });
     var groups = []; ev.forEach(function (e) { var g = groups[groups.length - 1]; if (!g || g.date !== e.date) groups.push(g = { date: e.date, items: [] }); g.items.push(e); });
     return h("div", { class: "list" }, groups.map(function (g) {
@@ -415,7 +499,7 @@ a { color: var(--accent); }
       return h("section", { class: "tl-day" },
         h("div", { class: "tl-date" }, fmtDate(g.date), " ", h("span", { class: d === 0 ? "today-mark" : "", text: d === 0 ? "오늘" : d > 0 ? "D-" + d : "지남" })),
         g.items.map(function (e) {
-          return h("div", { class: "tl-item" + (e.deadline ? " deadline" : "") }, h("span", { class: "label", text: e.label }), h("span", { text: e.name }));
+          return h("div", { class: "tl-item" + (e.deadline ? " deadline" : "") }, h("span", { class: "label", text: e.label }), h("span", { text: e.full }));
         }));
     }));
   }
@@ -434,14 +518,15 @@ a { color: var(--accent); }
     if (ui.busy) add(root, h("div", { class: "banner" }, h("span", { class: "spin" }), " 저장하는 중이에요…"));
     add(root, addPanel());
     var tabs = h("div", { class: "tabs", role: "tablist" },
-      [["list", "공고"], ["timeline", "일정"]].map(function (t) {
+      [["calendar", "달력"], ["list", "공고"], ["timeline", "일정 목록"]].map(function (t) {
         return h("button", { class: "tab", role: "tab", "aria-selected": String(ui.tab === t[0]), text: t[1], on: { click: function () { ui.tab = t[0]; render(); } } });
       }));
     add(root, h("div", { class: "foot" }, tabs,
       h("label", { style: "flex-direction:row;align-items:center;gap:6px" },
         h("input", { type: "checkbox", id: "show-past", checked: ui.showPast, style: "width:auto", on: { change: function (e) { ui.showPast = e.target.checked; render(); } } }),
         "지난 공고도 보기")));
-    if (ui.tab === "timeline") add(root, timeline());
+    if (ui.tab === "calendar") add(root, calendar());
+    else if (ui.tab === "timeline") add(root, timeline());
     else {
       var list = sortJobs(jobs).filter(function (j) { return ui.showPast || ui.editing === j.id || !isPast(j); });
       if (!jobs.length) add(root, h("div", { class: "empty" }, h("strong", { text: "아직 등록된 공고가 없어요." }), h("br"),
@@ -460,8 +545,9 @@ a { color: var(--accent); }
   var c = window.claude;
   if (!c || !c.use) { ui.mode = "local"; render(); return; }
   Promise.all([c.use("artifact").catch(function () { return null; }), c.use("sample").catch(function () { return null; }),
-    c.use("user").catch(function () { return null; })]).then(function (r) {
-    artifactApi = r[0]; sampleApi = r[1];
+    c.use("user").catch(function () { return null; }),
+    TRIGGER_ID ? c.use("mcp").catch(function () { return null; }) : null]).then(function (r) {
+    artifactApi = r[0]; sampleApi = r[1]; mcpApi = r[3] || null;
     ui.mode = artifactApi ? "live" : "local";
     var u = r[2];
     if (artifactApi && !u) ui.readOnly = true;
