@@ -152,6 +152,23 @@ section{display:flex;flex-direction:column;gap:18px}
 .gift input[type=text]{flex:1 1 220px;min-width:0;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--night);color:var(--snow)}
 .btn{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:14px;padding:10px 18px;background:var(--crane);color:#fff}
 .btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--snow)}
+.scards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:560px){.scards{grid-template-columns:repeat(4,1fr)}}
+.scard{font:inherit;border:0;background:transparent;padding:0;cursor:pointer;perspective:800px;aspect-ratio:3/4;color:var(--snow);min-width:0}
+.sc-in{position:relative;display:block;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
+.scard.open .sc-in{transform:rotateY(180deg)}
+.sc-front,.sc-back{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:10px;overflow:hidden}
+.sc-front{background:repeating-linear-gradient(45deg,#c0303a 0 14px,#a8252f 14px 28px)}
+.sc-front::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:14px;margin-left:-7px;background:var(--ember)}
+.sc-front::after{content:"";position:absolute;top:50%;left:0;right:0;height:14px;margin-top:-7px;background:var(--ember)}
+.sc-front .sc-name,.sc-front .sc-sub{position:relative;z-index:1;background:var(--night);padding:3px 12px;border-radius:99px}
+.sc-front .sc-sub{color:var(--snow)}
+.sc-back{background:var(--night-3);transform:rotateY(180deg);border:2px solid var(--ember)}
+.sc-name{font-family:var(--f-display);font-size:1.3rem}
+.sc-sub{font-size:.8rem;color:var(--muted)}
+.sc-to{font-family:var(--f-display);font-size:2rem;color:var(--ember);text-align:center;word-break:keep-all}
+#santa-ring{width:320px;height:320px;max-width:100%;display:block;margin:14px auto 0}
+@media (prefers-reduced-motion:reduce){.sc-in{transition:none}}
 .race-wrap{border-radius:16px;overflow:hidden;background:var(--night)}
 #race{display:block}
 .ticker{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:14px;background:var(--night);font-size:.92rem;min-height:3.4em}
@@ -275,6 +292,27 @@ footer{font-size:.8rem;color:var(--muted)}
       <p class="pen-result" id="pen-result" aria-live="polite"></p>
       <label for="penalties" style="color:var(--muted);font-size:.88rem">벌칙 목록 (쉼표로 구분 · 예시, 고쳐 쓰세요)</label>
       <input type="text" id="penalties" value="설거지, 다음 날 운전, 술 한 잔 원샷, 노래 한 곡, 아침 라면 끓이기, 뒷정리" autocomplete="off">
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="h-santa">
+  <div class="sec-head">
+    <h2 id="h-santa">랜덤 선물 주기</h2>
+    <span class="label">산타 짝꿍</span>
+  </div>
+  <div class="gift">
+    <label for="santa-names" style="color:var(--muted);font-size:.88rem">참가자 이름 (쉼표로 구분)</label>
+    <div class="row">
+      <input type="text" id="santa-names" value="나윤, 종호, 채연, 영선" autocomplete="off">
+      <button type="button" class="btn" id="santa-go">짝 정하기</button>
+    </div>
+    <p id="santa-hint" style="color:var(--muted);font-size:.88rem">짝 정하기를 누르면 누가 누구에게 선물할지 정해져요. 자기 자신은 안 나와요.</p>
+    <div id="santa-body" hidden>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:10px">자기 이름 카드만 몰래 눌러 보세요.</p>
+      <div class="scards" id="santa-cards"></div>
+      <div class="row" style="margin-top:12px"><button type="button" class="btn ghost" id="santa-all">전체 공개</button></div>
+      <div id="santa-ring-wrap" hidden><canvas id="santa-ring" width="520" height="520" role="img" aria-label="선물 주는 순서"></canvas></div>
     </div>
   </div>
 </section>
@@ -440,6 +478,7 @@ footer{font-size:.8rem;color:var(--muted)}
     plan=store.get('cw-plan')==='b'?'b':'a';
     try{applyGift(JSON.parse(store.get('cw-gift')||'null'))}catch(e){}
     loadExtrasLocal();
+    try{applySanta(JSON.parse(store.get('cw-santa')||'null'))}catch(e){}
     setSync('이 기기에만 저장',false);renderPlan();
   }
 
@@ -826,6 +865,88 @@ footer{font-size:.8rem;color:var(--muted)}
   }
   renderStamps();
 
+  /* 랜덤 선물 주기 (산타 짝꿍): 이름 · 시드 공유, 카드 열기는 각자 */
+  var santaEl=$('santa-names'), santa={names:santaEl.value,seed:null}, santaPending=false, santaQueued=false;
+  var santaOpen={}, santaAll=false, santaArm=false, santaSeedSeen=null, santaAnim=null;
+  function santaPlayers(){return parseNames(santa.names||'')}
+  function santaPairs(n,seed){var R=rng(seed^0x2545F491),p=[];for(var i=0;i<n;i++)p.push(i);for(var k=n-1;k>0;k--){var j=Math.floor(R()*k),t=p[k];p[k]=p[j];p[j]=t}return p}
+  function renderSanta(){
+    var P=santaPlayers(), ok=santa.seed!==null&&P.length>=2;
+    $('santa-hint').hidden=ok; $('santa-body').hidden=!ok;
+    if(!ok){$('santa-cards').innerHTML='';return}
+    var pr=santaPairs(P.length,santa.seed);
+    $('santa-cards').innerHTML=P.map(function(nm,i){
+      var open=santaOpen[i]||santaAll;
+      return '<button type="button" class="scard'+(open?' open':'')+'" data-i="'+i+'" aria-pressed="'+open+'">'+
+        '<span class="sc-in"><span class="sc-front"><span class="sc-name">'+esc(nm)+'</span><span class="sc-sub">눌러서 확인</span></span>'+
+        '<span class="sc-back"><span class="sc-sub">'+esc(nm)+'의 선물은</span><span class="sc-to">'+esc(P[pr[i]])+'</span><span class="sc-sub">에게!</span></span></span></button>';
+    }).join('');
+    $('santa-all').textContent=santaAll?'다시 가리기':(santaArm?'정말 모두 공개할까요? 한 번 더 누르기':'전체 공개');
+    $('santa-ring-wrap').hidden=!santaAll;
+    if(santaAll)playRing(P,pr);
+  }
+  $('santa-cards').addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.scard');if(!b||santaAll)return;
+    var i=+b.dataset.i; santaOpen[i]=!santaOpen[i]; b.classList.toggle('open',!!santaOpen[i]); b.setAttribute('aria-pressed',!!santaOpen[i]);
+  });
+  $('santa-all').addEventListener('click',function(){
+    if(santaAll){santaAll=false;santaArm=false;santaOpen={};renderSanta();return}
+    if(!santaArm){santaArm=true;renderSanta();setTimeout(function(){if(santaArm&&!santaAll){santaArm=false;renderSanta()}},4000);return}
+    santaArm=false;santaAll=true;renderSanta();
+  });
+  function playRing(P,pr){
+    var cv=$('santa-ring'),cx=cv.getContext&&cv.getContext('2d');if(!cx)return;
+    if(santaAnim)cancelAnimationFrame(santaAnim);
+    var S=520,n=P.length,R=S/2-70,c=S/2;
+    var pts=P.map(function(_,i){var a=-Math.PI/2+i*2*Math.PI/n;return [c+R*Math.cos(a),c+R*Math.sin(a)]});
+    var order=[],cur=0;for(var k=0;k<n;k++){order.push(cur);cur=pr[cur]}
+    function arc(i,tt){var a=pts[i],b=pts[pr[i]],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=mx-c,dy=my-c,L=Math.hypot(dx,dy)||1,qx=mx+dx/L*40,qy=my+dy/L*40;
+      var u=1-tt;return [u*u*a[0]+2*u*tt*qx+tt*tt*b[0],u*u*a[1]+2*u*tt*qy+tt*tt*b[1]]}
+    var st=performance.now(),per=reduce?0:900;
+    function frame(now){
+      var e=per?(now-st)/per:n, done=Math.min(n,e);
+      cx.clearRect(0,0,S,S);
+      for(var k=0;k<n;k++){
+        var i=order[k],prog=Math.max(0,Math.min(1,done-k));if(prog<=0)break;
+        cx.strokeStyle=COLORS[i%COLORS.length];cx.lineWidth=4;cx.lineCap='round';cx.beginPath();
+        for(var s=0;s<=24;s++){var q=arc(i,prog*s/24);s?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1])}cx.stroke();
+        if(prog>=1){var e1=arc(i,1),e0=arc(i,.93),an=Math.atan2(e1[1]-e0[1],e1[0]-e0[0]);
+          cx.fillStyle=COLORS[i%COLORS.length];cx.beginPath();cx.moveTo(e1[0]-Math.cos(an)*34,e1[1]-Math.sin(an)*34);
+          cx.lineTo(e1[0]-Math.cos(an)*52-Math.sin(an)*9,e1[1]-Math.sin(an)*52+Math.cos(an)*9);cx.lineTo(e1[0]-Math.cos(an)*52+Math.sin(an)*9,e1[1]-Math.sin(an)*52-Math.cos(an)*9);cx.fill()}
+        else{var g=arc(i,prog);cx.fillStyle='#ff5a5f';cx.fillRect(g[0]-11,g[1]-9,22,18);cx.fillStyle='#ffc247';cx.fillRect(g[0]-2.5,g[1]-9,5,18);cx.fillRect(g[0]-11,g[1]-2.5,22,5)}
+      }
+      pts.forEach(function(p,i){cx.beginPath();cx.arc(p[0],p[1],32,0,Math.PI*2);cx.fillStyle='#1c2a47';cx.fill();cx.lineWidth=3;cx.strokeStyle=COLORS[i%COLORS.length];cx.stroke();
+        cx.fillStyle='#f2f5fa';cx.font='24px Jua, sans-serif';cx.textAlign='center';cx.textBaseline='middle';var t=P[i];cx.fillText(t.length>3?t.slice(0,3):t,p[0],p[1]+1)});
+      if(done<n)santaAnim=requestAnimationFrame(frame);else santaAnim=null;
+    }
+    santaAnim=requestAnimationFrame(frame);
+  }
+  function saveSanta(){
+    if(!db){store.set('cw-santa',JSON.stringify(santa));return}
+    if(santaPending){santaQueued=true;return}
+    santaPending=true;
+    db.doc('settings/santa').set({names:santa.names,seed:santa.seed,by:myId||null,at:Date.now()}).catch(function(){}).then(function(){
+      santaPending=false;if(santaQueued){santaQueued=false;saveSanta()}
+    });
+  }
+  function applySanta(v){
+    if(!v)return;
+    if(typeof v.names==='string'&&document.activeElement!==santaEl)santaEl.value=v.names;
+    var seed=typeof v.seed==='number'?v.seed:null;
+    santa={names:typeof v.names==='string'?v.names:santaEl.value,seed:seed};
+    if(seed!==santaSeedSeen){santaSeedSeen=seed;santaOpen={};santaAll=false;santaArm=false}
+    renderSanta();
+  }
+  $('santa-go').addEventListener('click',function(){
+    if(!canWrite)return;
+    if(parseNames(santaEl.value).length<2){$('santa-hint').hidden=false;$('santa-hint').textContent='두 명 이상 적어 주세요.';return}
+    var seed=Math.floor(Math.random()*2147483647);
+    santa={names:santaEl.value,seed:seed};santaSeedSeen=seed;santaOpen={};santaAll=false;santaArm=false;
+    renderSanta();saveSanta();
+  });
+  santaEl.addEventListener('change',function(){if(!canWrite||santaEl.value===santa.names)return;santa.names=santaEl.value;santa.seed=null;santaSeedSeen=null;renderSanta();saveSanta()});
+  renderSanta();
+
   renderPlan();
   var started=false;
   var fallback=setTimeout(function(){if(!started)useLocal()},10000);
@@ -842,6 +963,7 @@ footer{font-size:.8rem;color:var(--muted)}
       Promise.resolve(user&&user.id?user.id():null).then(function(id){myId=id}).catch(function(){});
       Promise.resolve(user&&user.can?user.can('data.write'):null).then(function(c){if(c===false){canWrite=false;setSync('보기 전용',true);paint()}}).catch(function(){});
       subscribeExtras();
+      db.doc('settings/santa').onSnapshot(function(d){if(d.exists)applySanta(d.data())},function(){});
       db.collection('checks').onSnapshot(function(snap){
         var next={};snap.docs.forEach(function(d){var v=d.data();if(v)next[d.id]={done:!!v.done,by:v.by||null}});
         state=next;paint();resolveNames();
